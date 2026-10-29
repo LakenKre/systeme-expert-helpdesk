@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="32" height="32" role="img" aria-label="Logo Helpdesk N1">
+  <title>Helpdesk N1 — Système Expert</title>
+  <g fill="none" stroke="#0F5C6B" stroke-width="22" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M56 36 V220"/>
+    <path d="M200 36 V220"/>
+    <path d="M56 128 H96"/>
+    <path d="M160 128 H200"/>
+  </g>
+  <path d="M128 88 L168 128 L128 168 L88 128 Z M128 114 A14 14 0 1 0 128 142 A14 14 0 1 0 128 114 Z" fill="#0284C7" fill-rule="evenodd"/>
+</svg>

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% import "_macros.html" as ui %}
+{% block title %}Page introuvable — Helpdesk N1{% endblock %}
+
+{% block content %}
+<div class="shell">
+  <div class="error-page">
+    <p class="eyebrow">Erreur 404</p>
+    <h1 class="h1">Page introuvable</h1>
+    <p class="lede">Cette adresse ne mène à aucune page. Le lien est peut-être ancien ou mal recopié. Le diagnostic, la base de règles et l'évaluation restent accessibles depuis l'accueil.</p>
+    <div class="error-page__actions">
+      <a class="btn btn--primary" href="{{ url_for('index') }}">{{ ui.icon('back', 18) }} Revenir à l'accueil</a>
+      <a class="btn btn--secondary" href="{{ url_for('diagnostic') }}">Démarrer un diagnostic</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,46 @@
+{% macro icon(name, size=20) -%}
+<svg class="ico" width="{{ size }}" height="{{ size }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#i-{{ name }}"></use></svg>
+{%- endmacro %}
+
+{% macro gauge(cf, size=132) -%}
+{% set pct = (cf * 100)|round|int %}
+{% set band = 'high' if cf >= 0.85 else ('mid' if cf >= 0.6 else 'low') %}
+<div class="gauge gauge--{{ band }}{% if size < 120 %} gauge--sm{% endif %}" style="--gauge-size:{{ size }}px">
+  <svg viewBox="0 0 120 120" width="{{ size }}" height="{{ size }}" role="img" aria-label="Confiance estimée : {{ pct }} pour cent">
+    <circle class="gauge__track" cx="60" cy="60" r="52" fill="none" stroke-width="9"/>
+    <circle class="gauge__fill" cx="60" cy="60" r="52" fill="none" stroke-width="9" stroke-linecap="round"
+            stroke-dasharray="{{ (cf * 326.73)|round(1) }} 326.73" transform="rotate(-90 60 60)"/>
+  </svg>
+  <div class="gauge__value"><strong>{{ pct }}</strong><span>%</span></div>
+</div>
+{%- endmacro %}
+
+{% macro meter(cf, tone='primary') -%}
+<div class="meter{% if tone != 'primary' %} meter--{{ tone }}{% endif %}" role="presentation">
+  <div class="meter__fill" style="width:{{ (cf * 100)|round|int }}%"></div>
+</div>
+{%- endmacro %}
+
+{% macro tree_node(node) -%}
+<li>
+  <div class="tree__row">
+    <span class="tree__cf">{{ node.cf|cf }}</span>
+    <span class="tree__kind">{% if node.kind == 'diagnostic' %}Conclusion{% elif node.kind == 'inference' %}Déduction{% else %}Observation{% endif %}</span>
+    <span class="tree__label">{{ node.label }}</span>
+  </div>
+  {% if node.kind == 'diagnostic' and node.children %}
+  <p class="tree__calc">{{ (node.children|map(attribute='cf')|min)|cf }} (prémisse la plus faible) × {{ node.rule.cf|cf }} (règle) = {{ node.cf|cf }}</p>
+  {% endif %}
+  {% if node.children %}
+  <ul>
+    {% for child in node.children %}{{ tree_node(child) }}{% endfor %}
+  </ul>
+  {% endif %}
+</li>
+{%- endmacro %}
+
+{% macro step_list(steps) -%}
+<ol class="steps">
+  {% for step in steps %}<li><span>{{ step }}</span></li>{% endfor %}
+</ol>
+{%- endmacro %}

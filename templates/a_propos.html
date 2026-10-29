@@ -1,0 +1,224 @@
+{% extends "base.html" %}
+{% import "_macros.html" as ui %}
+{% block title %}À propos & Architecture — Helpdesk N1{% endblock %}
+
+{% block content %}
+<div class="shell" style="padding-top:32px;padding-bottom:48px">
+  <div class="stack-2" style="max-width:70ch">
+    <p class="eyebrow">Master 2 MIAGE · Année 2026-2027</p>
+    <h1 class="h1">Architecture & Cadre académique</h1>
+    <p class="lede">Système expert de support informatique niveau 1 — IA symbolique.</p>
+  </div>
+
+  <!-- Flux d'inférence -->
+  <section class="panel panel--pad-lg" style="margin-top:28px" aria-labelledby="arch-title">
+    <div class="panel-head">
+      <div>
+        <h2 id="arch-title">Flux de raisonnement</h2>
+        <p class="tiny muted">Déroulement séquentiel de l'inférence</p>
+      </div>
+      <span class="panel-head__hint">{{ frame_count }} cadres · {{ rule_count }} règles · {{ symptom_count }} faits</span>
+    </div>
+
+    <div class="arch-flow">
+      <div class="arch-flow__step">
+        <div class="arch-flow__header">
+          <span class="arch-flow__num">1</span>
+          <div>
+            <h3>Entrées</h3>
+            <p class="tiny muted">Observations du technicien</p>
+          </div>
+        </div>
+        <ul class="arch-flow__list">
+          <li><strong>{{ symptom_count }} faits observables</strong> qualifiés en langage métier</li>
+          <li><strong>4 degrés de certitude</strong> par réponse (1.0, 0.75, 0.50, 0.0)</li>
+          <li><strong>6 domaines</strong> pour circonscrire l'espace de recherche</li>
+        </ul>
+      </div>
+
+      <div class="arch-flow__step arch-flow__step--accent">
+        <div class="arch-flow__header">
+          <span class="arch-flow__num">2</span>
+          <div>
+            <h3>Moteur d'inférence</h3>
+            <p class="tiny muted">Raisonnement symbolique</p>
+          </div>
+        </div>
+        <ul class="arch-flow__list">
+          <li><strong>{{ rule_count }} règles de production</strong> (dont 10 intermédiaires)</li>
+          <li><strong>Chaînage arrière</strong> pour le diagnostic interactif guidé</li>
+          <li><strong>Chaînage avant</strong> pour la vérification batch des cas</li>
+          <li><strong>Combinaison MYCIN</strong> (Shortliffe) avec seuil à 0.20</li>
+          <li><strong>Ontologie d'actifs IT</strong> (cadres / <em>frames</em> avec SLA)</li>
+        </ul>
+      </div>
+
+      <div class="arch-flow__step">
+        <div class="arch-flow__header">
+          <span class="arch-flow__num">3</span>
+          <div>
+            <h3>Sorties & Actions</h3>
+            <p class="tiny muted">Résultats exploitables</p>
+          </div>
+        </div>
+        <ul class="arch-flow__list">
+          <li><strong>Diagnostic classé</strong> par confiance décroissante</li>
+          <li><strong>Procédure de résolution N1</strong> détaillée par étapes</li>
+          <li><strong>Arbre d'explication</strong> récursif (justification des prémisses)</li>
+          <li><strong>Escalade N2</strong> avec transmission intégrale du contexte</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Grille d'évaluation M2 MIAGE -->
+  <section class="panel" style="margin-top:24px" id="grille" aria-labelledby="grille-title">
+    <div class="panel-head">
+      <div>
+        <h2 id="grille-title">Grille d'évaluation M2 MIAGE</h2>
+        <p class="tiny muted">Pondération officielle du sujet de classe (100 %)</p>
+      </div>
+      <span class="badge badge--primary">Conforme</span>
+    </div>
+
+    <div class="table-wrap" style="box-shadow:none">
+      <table class="table table--clean">
+        <thead>
+          <tr>
+            <th style="width:30%">Critère</th>
+            <th style="width:12%">Pondération</th>
+            <th style="width:58%">Couverture dans le projet</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Compréhension du problème & démarche</strong></td>
+            <td><span class="badge badge--neutral">15 %</span></td>
+            <td>Formalisation du support N1, qualification ITIL, fiches réflexes opérationnelles.</td>
+          </tr>
+          <tr>
+            <td><strong>Préparation & modélisation des connaissances</strong></td>
+            <td><span class="badge badge--neutral">15 %</span></td>
+            <td>Recueil d'expertise en 42 règles, ontologie des actifs IT (SLA, cibles N2), anonymisation.</td>
+          </tr>
+          <tr>
+            <td><strong>Qualité technique & rigueur de l'évaluation</strong></td>
+            <td><span class="badge badge--neutral">25 %</span></td>
+            <td>Moteur d'inférence Python (chaînages avant et arrière), MYCIN, 30 cas de test, benchmark de bruit.</td>
+          </tr>
+          <tr>
+            <td><strong>Prototype, code & reproductibilité</strong></td>
+            <td><span class="badge badge--neutral">15 %</span></td>
+            <td>Code modulaire commenté, double interface (Flask & Streamlit), mode CLI, 31 tests d'intégration.</td>
+          </tr>
+          <tr>
+            <td><strong>Analyse métier, éthique & recommandations</strong></td>
+            <td><span class="badge badge--neutral">15 %</span></td>
+            <td>Alignement ITIL / KEDB, respect du périmètre N1, escalade N2 contextualisée, données anonymisées.</td>
+          </tr>
+          <tr>
+            <td><strong>Rapport écrit & soutenance orale</strong></td>
+            <td><span class="badge badge--neutral">15 %</span></td>
+            <td>Démonstrateur interactif, justification transparente du raisonnement, analyse des limites.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Correspondance avec le cours -->
+  <section class="panel" style="margin-top:24px" id="cours" aria-labelledby="cours-title">
+    <div class="panel-head">
+      <div>
+        <h2 id="cours-title">Correspondance avec le cours d'IA</h2>
+        <p class="tiny muted">Concepts théoriques enseignés par le Dr GBAME Gbede Sylvain</p>
+      </div>
+    </div>
+
+    <div class="table-wrap" style="box-shadow:none">
+      <table class="table table--clean">
+        <thead>
+          <tr>
+            <th style="width:25%">Notion du cours</th>
+            <th style="width:50%">Implémentation dans le système</th>
+            <th style="width:25%">Emplacement</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Règles de production</strong></td>
+            <td>42 règles SI / ALORS avec prémisses, faits intermédiaires et diagnostics.</td>
+            <td><code>helpdesk_expert_system.py</code> · Page Règles</td>
+          </tr>
+          <tr>
+            <td><strong>Cadres & Ontologie</strong></td>
+            <td>Ontologie d'actifs IT avec héritage (SLA cible, escalade N2, droits requis).</td>
+            <td><code>build_domain_ontology()</code> · Résultat</td>
+          </tr>
+          <tr>
+            <td><strong>Chaînage arrière</strong></td>
+            <td>Recherche dirigée par les buts pour poser uniquement les questions utiles.</td>
+            <td><code>backward_chain()</code> · Diagnostic guidé</td>
+          </tr>
+          <tr>
+            <td><strong>Chaînage avant</strong></td>
+            <td>Raisonnement guidé par les données (saturation de la mémoire de travail).</td>
+            <td><code>forward_chain()</code> · Évaluation & Streamlit</td>
+          </tr>
+          <tr>
+            <td><strong>Facteurs de certitude (MYCIN)</strong></td>
+            <td>Algèbre de Shortliffe combinant conjonctions et règles parallèles.</td>
+            <td><code>combine_cf()</code> · Jauges de confiance</td>
+          </tr>
+          <tr>
+            <td><strong>Module d'explication</strong></td>
+            <td>Justification locale (« Pourquoi cette question ? ») et globale (« Pourquoi cette conclusion ? »).</td>
+            <td>Trace récursive · Page Résultat</td>
+          </tr>
+          <tr>
+            <td><strong>Approche descendante vs ascendante</strong></td>
+            <td>Benchmark comparatif de robustesse face au bruit (système expert vs 3 classifieurs scikit-learn).</td>
+            <td><code>benchmark_bruit()</code> · Page Évaluation</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Limites méthodologiques -->
+  <section class="panel" style="margin-top:24px" id="limites" aria-labelledby="limites-title">
+    <div class="panel-head">
+      <div>
+        <h2 id="limites-title">Limites méthodologiques & Discussion</h2>
+        <p class="tiny muted">Éléments d'analyse critique pour la soutenance</p>
+      </div>
+    </div>
+
+    <div class="limits-grid">
+      <div class="limit-card">
+        <span class="limit-card__tag">Cohérence interne</span>
+        <p class="limit-card__title">Validation logique vs terrain</p>
+        <p class="tiny muted">Les 30 cas vérifient la complétude et l'absence de contradiction dans les règles. Ils attestent de la cohérence interne du moteur sans remplacer un jeu de données réelles.</p>
+      </div>
+
+      <div class="limit-card">
+        <span class="limit-card__tag">Sensibilité au bruit</span>
+        <p class="limit-card__title">Règles strictes vs modèles probabilistes</p>
+        <p class="tiny muted">En cas d'omission d'un symptôme clé, le système expert refuse d'émettre un faux diagnostic par sécurité, là où un classifieur statistique compense par corrélation.</p>
+      </div>
+
+      <div class="limit-card">
+        <span class="limit-card__tag">Évolution du parc</span>
+        <p class="limit-card__title">Connaissances statiques</p>
+        <p class="tiny muted">La base repose sur l'expertise formalisée des techniciens. Toute mise à jour matérielle ou applicative nécessite une maintenance manuelle de la base de règles.</p>
+      </div>
+
+      <div class="limit-card">
+        <span class="limit-card__tag">Gouvernance ITIL</span>
+        <p class="limit-card__title">Escalade N2 systématique</p>
+        <p class="tiny muted">Face à une panne hors référentiel, le système délègue immédiatement au niveau supérieur en transmettant l'historique des observations recueillies.</p>
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}

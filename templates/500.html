@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% import "_macros.html" as ui %}
+{% block title %}Erreur serveur — Helpdesk N1{% endblock %}
+
+{% block content %}
+<div class="shell">
+  <div class="error-page">
+    <p class="eyebrow">Erreur 500</p>
+    <h1 class="h1">Le diagnostic n'a pas pu aboutir.</h1>
+    <p class="lede">Une erreur inattendue a interrompu le calcul. Vos réponses ne sont pas perdues : revenez à l'assistant pour reprendre, ou réinitialisez la session.</p>
+    <div class="error-page__actions">
+      <a class="btn btn--primary" href="{{ url_for('diagnostic') }}">{{ ui.icon('refresh', 18) }} Reprendre le diagnostic</a>
+      <a class="btn btn--secondary" href="{{ url_for('index') }}">Revenir à l'accueil</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

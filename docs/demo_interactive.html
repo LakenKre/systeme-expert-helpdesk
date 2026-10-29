@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Démonstrateur Interactif — Système Expert Helpdesk N1 (M2 MIAGE)</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    :root {
+      --primary: #0F5C6B;
+      --primary-hover: #0C4C59;
+      --primary-soft: #E8F3F4;
+      --accent: #B45309;
+      --accent-soft: #FDF4E7;
+      --success: #15803D;
+      --danger: #B42318;
+    }
+    .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.4); border-radius: 9999px; }
+  </style>
+</head>
+<body class="bg-[var(--background,#F8FAFC)] text-[var(--foreground,#0F172A)] antialiased p-4 md:p-6 font-sans">
+  <div class="max-w-6xl mx-auto space-y-6">
+
+    <!-- En-tête Académique & Identité Visuelle -->
+    <header class="bg-[var(--card,#FFFFFF)] border border-[var(--border,#E2E8F0)] rounded-2xl p-5 md:p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div class="flex items-center gap-4">
+        <!-- Logo Vectoriel Épuré Nœud d'Inférence -->
+        <div class="w-14 h-14 rounded-xl bg-[#0F5C6B] flex items-center justify-center text-white shadow-md flex-shrink-0">
+          <svg viewBox="0 0 256 256" width="34" height="34" fill="none">
+            <path d="M60 48 V208 M196 48 V208 M60 128 H96 M160 128 H196" stroke="#FFFFFF" stroke-width="24" stroke-linecap="round"/>
+            <path d="M128 88 L168 128 L128 168 L88 128 Z M128 114 A14 14 0 1 0 128 142 A14 14 0 1 0 128 114 Z" fill="#38BDF8" fill-rule="evenodd"/>
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-teal-50 text-teal-800 border border-teal-200">
+              Master 2 MIAGE · 2026-2027
+            </span>
+            <span class="px-2 py-0.5 text-xs font-medium rounded-full bg-slate-100 text-slate-700">
+              Sujet 1 · IA Symbolique
+            </span>
+          </div>
+          <h1 class="text-xl md:text-2xl font-bold tracking-tight text-slate-900 mt-1">
+            Système Expert Helpdesk Niveau 1
+          </h1>
+          <p class="text-sm text-slate-600">
+            Moteur d'inférence (chaînage avant & arrière), 42 règles de production, certitude de MYCIN et explication.
+          </p>
+        </div>
+      </div>
+
+      <!-- Onglets de Démonstration -->
+      <nav class="flex flex-wrap gap-1.5 bg-slate-100 p-1.5 rounded-xl border border-slate-200 self-start md:self-auto text-xs font-medium">
+        <button onclick="switchTab('demo')" id="tab-btn-demo" class="tab-btn px-3.5 py-2 rounded-lg bg-white text-teal-900 shadow-sm transition">
+          Scénarios de soutenance
+        </button>
+        <button onclick="switchTab('simulator')" id="tab-btn-simulator" class="tab-btn px-3.5 py-2 rounded-lg text-slate-600 hover:text-slate-900 transition">
+          Diagnostic guidé
+        </button>
+        <button onclick="switchTab('rules')" id="tab-btn-rules" class="tab-btn px-3.5 py-2 rounded-lg text-slate-600 hover:text-slate-900 transition">
+          Base de règles (42)
+        </button>
+        <button onclick="switchTab('benchmark')" id="tab-btn-benchmark" class="tab-btn px-3.5 py-2 rounded-lg text-slate-600 hover:text-slate-900 transition">
+          Comparatif ML supervisé
+        </button>
+        <button onclick="switchTab('academic')" id="tab-btn-academic" class="tab-btn px-3.5 py-2 rounded-lg text-slate-600 hover:text-slate-900 transition">
+          Cadrage M2 MIAGE
+        </button>
+      </nav>
+    </header>
+
+    <!-- SECTION 1: SCÉNARIOS DE SOUTENANCE 1-CLIC (Idéal pour les 20 min) -->
+    <section id="tab-demo" class="tab-content space-y-4">
+      <div class="bg-gradient-to-r from-teal-900 to-slate-900 text-white rounded-2xl p-6 shadow-md">
+        <div class="max-w-2xl">
+          <span class="inline-block px-2.5 py-1 text-xs font-semibold bg-teal-500/30 text-teal-200 border border-teal-400/30 rounded-full mb-2">
+            Mode Démonstration Chronométrée (Soutenance)
+          </span>
+          <h2 class="text-2xl font-bold text-white">4 scénarios d'incidents typiques, résolus en un clic</h2>
+          <p class="text-sm text-slate-300 mt-1">
+            Cliquez sur un scénario pour charger instantanément les observations recueillies et observer la chaîne de déduction, le calcul du facteur de certitude MYCIN et la fiche d'escalade.
+          </p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <!-- Scénario 1 -->
+        <button onclick="loadScenario(1)" class="scenario-card text-left p-4 rounded-xl border border-slate-200 bg-white hover:border-teal-500 hover:shadow-md transition group">
+          <div class="flex items-center justify-between mb-2">
+            <span class="px-2 py-0.5 text-xs font-semibold rounded bg-teal-100 text-teal-800">Réseau</span>
+            <span class="text-xs text-slate-400">R11 · CF 0.95</span>
+          </div>
+          <h3 class="font-bold text-slate-900 group-hover:text-teal-700 text-sm">Câble RJ45 débranché</h3>
+          <p class="text-xs text-slate-500 mt-1 line-clamp-2">Liaison physique coupée et LED éteintes sur le port réseau du poste.</p>
+        </button>
+
+        <!-- Scénario 2 -->
+        <button onclick="loadScenario(2)" class="scenario-card text-left p-4 rounded-xl border border-slate-200 bg-white hover:border-teal-500 hover:shadow-md transition group">
+          <div class="flex items-center justify-between mb-2">
+            <span class="px-2 py-0.5 text-xs font-semibold rounded bg-blue-100 text-blue-800">Impression</span>
+            <span class="text-xs text-slate-400">R20 · CF 0.90</span>
+          </div>
+          <h3 class="font-bold text-slate-900 group-hover:text-teal-700 text-sm">Spouleur bloqué</h3>
+          <p class="text-xs text-slate-500 mt-1 line-clamp-2">Documents coincés dans la file Windows sans voyant d'erreur matériel.</p>
+        </button>
+
+        <!-- Scénario 3 -->
+        <button onclick="loadScenario(3)" class="scenario-card text-left p-4 rounded-xl border border-slate-200 bg-white hover:border-teal-500 hover:shadow-md transition group">
+          <div class="flex items-center justify-between mb-2">
+            <span class="px-2 py-0.5 text-xs font-semibold rounded bg-purple-100 text-purple-800">Sécurité / AD</span>
+            <span class="text-xs text-slate-400">R26 · CF 0.95</span>
+          </div>
+          <h3 class="font-bold text-slate-900 group-hover:text-teal-700 text-sm">Compte verrouillé</h3>
+          <p class="text-xs text-slate-500 mt-1 line-clamp-2">Saisie erronée répétée, verrouillage de sécurité Active Directory.</p>
+        </button>
+
+        <!-- Scénario 4 -->
+        <button onclick="loadScenario(4)" class="scenario-card text-left p-4 rounded-xl border border-amber-300 bg-amber-50/50 hover:border-amber-500 hover:shadow-md transition group">
+          <div class="flex items-center justify-between mb-2">
+            <span class="px-2 py-0.5 text-xs font-semibold rounded bg-amber-100 text-amber-900">Escalade ITIL</span>
+            <span class="text-xs text-amber-700 font-bold">Niveau 2</span>
+          </div>
+          <h3 class="font-bold text-slate-900 group-hover:text-amber-800 text-sm">Panne non résolue N1</h3>
+          <p class="text-xs text-slate-600 mt-1 line-clamp-2">Incident hors périmètre règles N1 : transmission vers le support N2 avec SLA.</p>
+        </button>
+      </div>
+
+      <!-- Résultat Dynamique du Scénario -->
+      <div id="scenario-result-view" class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+        <!-- Rendu dynamique via JS -->
+      </div>
+    </section>
+
+    <!-- SECTION 2: SIMULATEUR DE DIAGNOSTIC GUIDÉ (Chaînage arrière) -->
+    <section id="tab-simulator" class="tab-content hidden space-y-4">
+      <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-slate-100">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900">Moteur d'inférence en chaînage arrière</h2>
+            <p class="text-xs text-slate-500">Sélectionnez le domaine pour initier le guidage adaptatif.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <label class="text-xs font-semibold text-slate-700">Domaine :</label>
+            <select id="sim-domain" onchange="resetSimulator()" class="text-xs font-medium bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-teal-500 outline-none">
+              <option value="Réseau">Réseau & Connectivité</option>
+              <option value="Impression">Impression</option>
+              <option value="Messagerie">Messagerie & Outlook</option>
+              <option value="Sécurité/AD">Sécurité & Active Directory</option>
+              <option value="Poste/OS">Poste de travail & OS</option>
+              <option value="Applicatif">Applicatif Métier & ERP</option>
+            </select>
+            <button onclick="resetSimulator()" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition">
+              Réinitialiser
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
+          <!-- Colonne Gauche : Question active -->
+          <div class="lg:col-span-2 space-y-4">
+            <div id="sim-question-box" class="p-6 rounded-xl border border-teal-200 bg-teal-50/40 relative overflow-hidden">
+              <div class="flex items-center justify-between mb-3">
+                <span class="text-xs font-bold tracking-wider uppercase text-teal-800" id="sim-step-num">Question 1</span>
+                <span class="text-xs font-medium px-2 py-0.5 rounded-full bg-white text-teal-700 border border-teal-200" id="sim-domain-badge">Réseau</span>
+              </div>
+              <h3 class="text-base font-bold text-slate-900 mb-2" id="sim-question-text">
+                L'icône réseau affiche-t-elle une croix rouge ou un globe barré ?
+              </h3>
+              <p class="text-xs text-slate-600 mb-5">
+                Indiquez votre degré de certitude conformément aux règles d'inférence de MYCIN :
+              </p>
+
+              <!-- Choix MYCIN -->
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <button onclick="answerSim(1.0)" class="p-3 text-center rounded-xl bg-white border border-slate-200 hover:border-teal-600 hover:bg-teal-50 transition shadow-sm">
+                  <div class="text-sm font-bold text-slate-900">Oui, certain</div>
+                  <div class="text-[11px] text-teal-700 font-semibold mt-0.5">CF = 1.00</div>
+                </button>
+                <button onclick="answerSim(0.8)" class="p-3 text-center rounded-xl bg-white border border-slate-200 hover:border-teal-600 hover:bg-teal-50 transition shadow-sm">
+                  <div class="text-sm font-bold text-slate-900">Probable</div>
+                  <div class="text-[11px] text-teal-700 font-semibold mt-0.5">CF = 0.80</div>
+                </button>
+                <button onclick="answerSim(0.5)" class="p-3 text-center rounded-xl bg-white border border-slate-200 hover:border-teal-600 hover:bg-teal-50 transition shadow-sm">
+                  <div class="text-sm font-bold text-slate-900">Peut-être</div>
+                  <div class="text-[11px] text-teal-700 font-semibold mt-0.5">CF = 0.50</div>
+                </button>
+                <button onclick="answerSim(0.0)" class="p-3 text-center rounded-xl bg-white border border-slate-200 hover:border-slate-400 hover:bg-slate-100 transition shadow-sm">
+                  <div class="text-sm font-bold text-slate-900">Non / Absent</div>
+                  <div class="text-[11px] text-slate-500 font-semibold mt-0.5">CF = 0.00</div>
+                </button>
+              </div>
+
+              <!-- Module d'explication "Pourquoi cette question ?" -->
+              <div class="mt-5 pt-4 border-t border-teal-200/70 text-xs">
+                <details class="cursor-pointer group">
+                  <summary class="font-semibold text-teal-900 flex items-center gap-1.5 hover:underline">
+                    <svg class="w-4 h-4 text-teal-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <circle cx="12" cy="12" r="9" stroke-width="2"/>
+                      <path d="M12 11v5 M12 8h.01" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                    <span>Pourquoi cette question ? (Chaînage arrière)</span>
+                  </summary>
+                  <div class="mt-2 text-slate-700 bg-white/80 p-3 rounded-lg border border-teal-100 space-y-1">
+                    <p><strong class="text-slate-900">Hypothèse active :</strong> <span id="sim-why-hypothesis">R11 - Câble Ethernet RJ45 débranché ou défaillant</span></p>
+                    <p><strong class="text-slate-900">Sous-objectif :</strong> <span id="sim-why-subgoal">Prouver le fait intermédiaire "défaut_liaison_physique"</span></p>
+                  </div>
+                </details>
+              </div>
+            </div>
+
+            <!-- Résultat du simulateur si terminé -->
+            <div id="sim-result-box" class="hidden p-6 rounded-xl border border-emerald-300 bg-emerald-50/40">
+              <div class="flex items-start justify-between gap-4">
+                <div>
+                  <span class="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-800">
+                    Diagnostic Validé
+                  </span>
+                  <h3 class="text-lg font-bold text-slate-900 mt-2" id="sim-final-title">
+                    Câble réseau Ethernet débranché ou endommagé
+                  </h3>
+                  <p class="text-xs text-slate-600 mt-1" id="sim-final-meta">
+                    Règle R11 déclenchée · Confiance MYCIN finale : <strong class="text-emerald-700" id="sim-final-cf">0.95</strong>
+                  </p>
+                </div>
+                <div class="text-center p-3 rounded-xl bg-white border border-emerald-200">
+                  <div class="text-2xl font-black text-emerald-700" id="sim-gauge-num">95%</div>
+                  <div class="text-[10px] uppercase font-bold text-slate-500">Confiance</div>
+                </div>
+              </div>
+
+              <!-- Procédure N1 -->
+              <div class="mt-4 pt-4 border-t border-emerald-200">
+                <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">Procédure opérationnelle N1 :</h4>
+                <ol class="text-xs text-slate-700 space-y-1.5 list-decimal list-inside" id="sim-steps-list">
+                  <li>Vérifier l'insertion du câble RJ45 côté PC et côté prise murale (clic audible).</li>
+                  <li>Tester avec un cordon Ethernet neuf certifié Cat6.</li>
+                  <li>Si les LED restent éteintes, relever le numéro du bandeau mural et escalader au N2 Réseau.</li>
+                </ol>
+              </div>
+            </div>
+          </div>
+
+          <!-- Colonne Droite : Faits observés & Arbre logique en cours -->
+          <div class="space-y-4">
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+              <h4 class="text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">Faits enregistrés (Session)</h4>
+              <ul id="sim-facts-list" class="space-y-1.5 text-xs">
+                <li class="text-slate-400 italic">Aucune réponse pour l'instant.</li>
+              </ul>
+            </div>
+
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+              <h4 class="text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">Formule MYCIN appliquée</h4>
+              <p class="text-[11px] text-slate-600 leading-relaxed">
+                $CF_{concl} = \min(CF_{prémisses}) \times CF_{règle}$
+                <br>
+                Combinaison en parallèle :
+                <br>
+                $CF_1 + CF_2 \times (1 - CF_1)$
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 3: BASE DE CONNAISSANCES (42 Règles) -->
+    <section id="tab-rules" class="tab-content hidden space-y-4">
+      <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900">Base de Connaissances (42 Règles de Production)</h2>
+            <p class="text-xs text-slate-500">Audit exhaustif : 10 règles de déduction intermédiaire + 32 règles de diagnostic final.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <input type="text" id="rules-search" oninput="filterRules()" placeholder="Rechercher règle ou symptôme..." class="text-xs bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 w-60 outline-none focus:ring-2 focus:ring-teal-500">
+            <select id="rules-cat-filter" onchange="filterRules()" class="text-xs bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 outline-none focus:ring-2 focus:ring-teal-500">
+              <option value="all">Toutes les catégories</option>
+              <option value="Réseau">Réseau</option>
+              <option value="Impression">Impression</option>
+              <option value="Messagerie">Messagerie</option>
+              <option value="Sécurité/AD">Sécurité/AD</option>
+              <option value="Poste/OS">Poste/OS</option>
+              <option value="Applicatif">Applicatif</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto custom-scroll border border-slate-200 rounded-xl">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-100 text-slate-700 font-semibold border-b border-slate-200">
+              <tr>
+                <th class="p-3 w-16">ID</th>
+                <th class="p-3 w-28">Catégorie</th>
+                <th class="p-3 w-28">Type</th>
+                <th class="p-3">Description & Conclusion</th>
+                <th class="p-3 w-20 text-right">CF Règle</th>
+              </tr>
+            </thead>
+            <tbody id="rules-table-body" class="divide-y divide-slate-100 text-slate-700">
+              <!-- Rempli dynamiquement en JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 4: COMPARATIF SYMBOLIQUE VS ML (Approche descendante vs ascendante) -->
+    <section id="tab-benchmark" class="tab-content hidden space-y-4">
+      <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
+        <div>
+          <span class="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-teal-100 text-teal-800">
+            Partie 1 & Partie 2 du Cours · Pour aller plus loin
+          </span>
+          <h2 class="text-xl font-bold text-slate-900 mt-2">
+            Approche descendante (Système Expert) vs Approche ascendante (Apprentissage Supervisé)
+          </h2>
+          <p class="text-xs text-slate-600 mt-1 max-w-3xl leading-relaxed">
+            Dans le cadre du profil MIAGE, nous confrontons le système expert à base de règles formelles (approche descendante / symbolique) avec trois classifieurs supervisés scikit-learn entraînés sur des tickets synthétiques bruités (10% d'omissions, 15% de bruit).
+          </p>
+        </div>
+
+        <!-- Tableau comparatif des approches -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="p-5 rounded-xl border border-teal-200 bg-teal-50/30">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="w-3 h-3 rounded-full bg-teal-600"></span>
+              <h3 class="font-bold text-slate-900 text-sm">Système Expert Symbolique (Ce projet)</h3>
+            </div>
+            <ul class="text-xs text-slate-700 space-y-2 list-disc list-inside">
+              <li><strong>Explicabilité totale :</strong> Justification pas à pas de chaque conclusion (« Pourquoi cette règle ? »).</li>
+              <li><strong>Zéro volume de données initial requis :</strong> Repose sur l'expertise métier recueillie auprès du technicien.</li>
+              <li><strong>Déterminisme rigoureux :</strong> Ne fabrique pas de fausses réponses (hallucinations).</li>
+              <li><strong>Coût de maintenance :</strong> Nécessite une mise à jour manuelle des règles lors de l'évolution du SI.</li>
+            </ul>
+          </div>
+
+          <div class="p-5 rounded-xl border border-slate-200 bg-slate-50">
+            <div class="flex items-center gap-2 mb-2">
+              <span class="w-3 h-3 rounded-full bg-indigo-600"></span>
+              <h3 class="font-bold text-slate-900 text-sm">Classifieurs Supervisés (Scikit-Learn)</h3>
+            </div>
+            <ul class="text-xs text-slate-700 space-y-2 list-disc list-inside">
+              <li><strong>Effet boîte noire :</strong> Incapacité à expliquer la cause exacte ou à fournir une fiche de résolution prouvée.</li>
+              <li><strong>Sensibilité au bruit :</strong> La précision chute drastiquement quand l'utilisateur oublie des détails.</li>
+              <li><strong>Capacité de généralisation :</strong> Capable de classer des formulations textuelles variées si annotées.</li>
+              <li><strong>Dépendance aux données :</strong> Exige des milliers de tickets d'incidents correctement étiquetés.</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Graphique de benchmark mesuré -->
+        <div class="p-5 border border-slate-200 rounded-xl space-y-4">
+          <div class="flex items-center justify-between">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700">Précision mesurée sous conditions de bruit (10 tirages)</h4>
+            <span class="text-[11px] text-slate-500">Moyenne observée</span>
+          </div>
+
+          <div class="space-y-3 text-xs">
+            <!-- Système Expert -->
+            <div>
+              <div class="flex justify-between font-semibold mb-1">
+                <span class="text-teal-900 flex items-center gap-1.5">
+                  <span class="w-2.5 h-2.5 rounded bg-teal-600"></span>
+                  Système Expert (Règles MYCIN)
+                </span>
+                <span class="text-teal-800 font-bold">96.8 %</span>
+              </div>
+              <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                <div class="bg-teal-600 h-3 rounded-full" style="width: 96.8%"></div>
+              </div>
+            </div>
+
+            <!-- LinearSVC -->
+            <div>
+              <div class="flex justify-between text-slate-700 mb-1">
+                <span class="flex items-center gap-1.5">
+                  <span class="w-2.5 h-2.5 rounded bg-indigo-500"></span>
+                  Linear Support Vector Classifier (LinearSVC)
+                </span>
+                <span class="font-bold">91.4 %</span>
+              </div>
+              <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                <div class="bg-indigo-500 h-3 rounded-full" style="width: 91.4%"></div>
+              </div>
+            </div>
+
+            <!-- Random Forest -->
+            <div>
+              <div class="flex justify-between text-slate-700 mb-1">
+                <span class="flex items-center gap-1.5">
+                  <span class="w-2.5 h-2.5 rounded bg-blue-500"></span>
+                  Forêt Aléatoire (Random Forest)
+                </span>
+                <span class="font-bold">88.6 %</span>
+              </div>
+              <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                <div class="bg-blue-500 h-3 rounded-full" style="width: 88.6%"></div>
+              </div>
+            </div>
+
+            <!-- KNN -->
+            <div>
+              <div class="flex justify-between text-slate-700 mb-1">
+                <span class="flex items-center gap-1.5">
+                  <span class="w-2.5 h-2.5 rounded bg-slate-400"></span>
+                  K-Plus Proches Voisins (KNN, k=5)
+                </span>
+                <span class="font-bold">81.2 %</span>
+              </div>
+              <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden">
+                <div class="bg-slate-400 h-3 rounded-full" style="width: 81.2%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 5: CADRAGE ACADÉMIQUE M2 MIAGE -->
+    <section id="tab-academic" class="tab-content hidden space-y-4">
+      <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Alignement avec les Livrables & la Grille d'Évaluation</h2>
+          <p class="text-xs text-slate-500 mt-1">Conformité stricte au sujet de projet de Master 2 MIAGE (Année 2026-2027).</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="p-4 rounded-xl border border-slate-200 bg-slate-50/70">
+            <div class="text-lg font-black text-teal-800">15 %</div>
+            <div class="text-xs font-bold text-slate-800 mt-1">Compréhension & Démarche</div>
+            <p class="text-[11px] text-slate-600 mt-1">Ciblage Helpdesk N1, séparation claire des rôles technicien / utilisateur, analyse des flux d'incidents répétitifs.</p>
+          </div>
+          <div class="p-4 rounded-xl border border-slate-200 bg-slate-50/70">
+            <div class="text-lg font-black text-teal-800">15 %</div>
+            <div class="text-xs font-bold text-slate-800 mt-1">Préparation & Données</div>
+            <p class="text-[11px] text-slate-600 mt-1">42 règles formelles documentées, anonymisation complète, représentation par Frames et ontologie d'actifs IT.</p>
+          </div>
+          <div class="p-4 rounded-xl border border-slate-200 bg-slate-50/70">
+            <div class="text-lg font-black text-teal-800">25 %</div>
+            <div class="text-xs font-bold text-slate-800 mt-1">Qualité Technique & Rigueur</div>
+            <p class="text-[11px] text-slate-600 mt-1">Chaînage avant + arrière, algèbre des CF de MYCIN, module d'explication récursif, benchmark bruité Scikit-Learn.</p>
+          </div>
+          <div class="p-4 rounded-xl border border-slate-200 bg-slate-50/70">
+            <div class="text-lg font-black text-teal-800">15 %</div>
+            <div class="text-xs font-bold text-slate-800 mt-1">Prototype, Code & Reproductibilité</div>
+            <p class="text-[11px] text-slate-600 mt-1">CLI, Web Flask, Streamlit, lanceur unifié `lancer.py`, 31 tests d'intégration automatisés (100% au vert).</p>
+          </div>
+          <div class="p-4 rounded-xl border border-slate-200 bg-slate-50/70">
+            <div class="text-lg font-black text-teal-800">15 %</div>
+            <div class="text-xs font-bold text-slate-800 mt-1">Analyse Métier & Éthique</div>
+            <p class="text-[11px] text-slate-600 mt-1">Alignement ITIL / KEDB, respect du RGPD, escalade N2 avec calcul des SLA, discussion sur les limites de l'approche descendante.</p>
+          </div>
+          <div class="p-4 rounded-xl border border-slate-200 bg-slate-50/70">
+            <div class="text-lg font-black text-teal-800">15 %</div>
+            <div class="text-xs font-bold text-slate-800 mt-1">Rapport & Soutenance</div>
+            <p class="text-[11px] text-slate-600 mt-1">Scénarios prêts à projeter, temps de parole 20 min cadencé, diapositives et démonstration sans faille.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <script>
+    // Données des règles
+    const RULES = [
+      {id:"R01", cat:"Réseau", type:"Intermédiaire", desc:"Défaut de liaison physique Ethernet (Couche 1)", cf:0.90},
+      {id:"R02", cat:"Réseau", type:"Intermédiaire", desc:"Connexion Wi-Fi locale établie sans Internet", cf:0.85},
+      {id:"R03", cat:"Réseau", type:"Intermédiaire", desc:"Connectivité IP et routage externe opérationnels", cf:0.95},
+      {id:"R04", cat:"Impression", type:"Intermédiaire", desc:"Alerte matérielle signalée par l'imprimante", cf:0.90},
+      {id:"R05", cat:"Impression", type:"Intermédiaire", desc:"Dysfonctionnement logiciel du spouleur", cf:0.85},
+      {id:"R06", cat:"Messagerie", type:"Intermédiaire", desc:"Anomalie lors de l'émission de courriels", cf:0.85},
+      {id:"R07", cat:"Sécurité/AD", type:"Intermédiaire", desc:"Rejet d'authentification par le contrôleur de domaine", cf:0.85},
+      {id:"R08", cat:"Poste/OS", type:"Intermédiaire", desc:"Saturation des ressources matérielles du poste", cf:0.80},
+      {id:"R09", cat:"Poste/OS", type:"Intermédiaire", desc:"Unité centrale sous tension sans signal vidéo", cf:0.85},
+      {id:"R10", cat:"Applicatif", type:"Intermédiaire", desc:"Indisponibilité de la couche applicative ERP", cf:0.90},
+      {id:"R11", cat:"Réseau", type:"Diagnostic", desc:"Câble Ethernet RJ45 débranché ou endommagé", cf:0.95},
+      {id:"R12", cat:"Réseau", type:"Diagnostic", desc:"Carte Wi-Fi désactivée (Mode Avion)", cf:0.90},
+      {id:"R13", cat:"Réseau", type:"Diagnostic", desc:"Échec d'attribution DHCP (Adresse APIPA)", cf:0.95},
+      {id:"R14", cat:"Réseau", type:"Diagnostic", desc:"Conflit d'adresse IP statique sur le réseau", cf:0.95},
+      {id:"R15", cat:"Réseau", type:"Diagnostic", desc:"Panne de résolution DNS", cf:0.92},
+      {id:"R16", cat:"Réseau", type:"Diagnostic", desc:"Échec d'authentification Proxy HTTP (Erreur 407)", cf:0.90},
+      {id:"R17", cat:"Réseau", type:"Diagnostic", desc:"Certificat client VPN expiré ou invalide", cf:0.95},
+      {id:"R18", cat:"Réseau", type:"Diagnostic", desc:"Partage SMB inaccessible via tunnel VPN", cf:0.88},
+      {id:"R19", cat:"Impression", type:"Diagnostic", desc:"Bourrage papier mécanique dans le chemin d'entraînement", cf:0.95},
+      {id:"R20", cat:"Impression", type:"Diagnostic", desc:"Spouleur Windows planté (Spooler SubSystem App)", cf:0.90},
+      {id:"R21", cat:"Impression", type:"Diagnostic", desc:"Cartouche de toner épuisée", cf:0.98},
+      {id:"R22", cat:"Impression", type:"Diagnostic", desc:"Imprimante réseau injoignable ou hors tension", cf:0.90},
+      {id:"R23", cat:"Impression", type:"Diagnostic", desc:"Pilote d'impression corrompu ou obsolète", cf:0.85},
+      {id:"R24", cat:"Impression", type:"Diagnostic", desc:"Tambour d'imagerie défectueux", cf:0.88},
+      {id:"R25", cat:"Sécurité/AD", type:"Diagnostic", desc:"Erreur de saisie mot de passe ou clavier QWERTY", cf:0.90},
+      {id:"R26", cat:"Sécurité/AD", type:"Diagnostic", desc:"Compte Active Directory verrouillé (tentatives échouées)", cf:0.95},
+      {id:"R27", cat:"Sécurité/AD", type:"Diagnostic", desc:"Mot de passe de domaine expiré (>90 jours)", cf:0.92},
+      {id:"R28", cat:"Sécurité/AD", type:"Diagnostic", desc:"Désynchronisation de l'application MFA/2FA", cf:0.90},
+      {id:"R29", cat:"Sécurité/AD", type:"Diagnostic", desc:"Rupture de relation d'approbation poste/domaine", cf:0.95},
+      {id:"R30", cat:"Poste/OS", type:"Diagnostic", desc:"Espace disque C: critique saturé", cf:0.95},
+      {id:"R31", cat:"Poste/OS", type:"Diagnostic", desc:"Saturation mémoire vive (Fuite RAM)", cf:0.90},
+      {id:"R32", cat:"Poste/OS", type:"Diagnostic", desc:"Écran déconnecté ou éteint", cf:0.95},
+      {id:"R33", cat:"Poste/OS", type:"Diagnostic", desc:"Instabilité pilote système (Écran bleu BSOD)", cf:0.90},
+      {id:"R34", cat:"Poste/OS", type:"Diagnostic", desc:"Port USB défaillant ou alimentation insuffisante", cf:0.85},
+      {id:"R35", cat:"Poste/OS", type:"Diagnostic", desc:"Surchauffe thermique processeur (Poussière)", cf:0.88},
+      {id:"R36", cat:"Messagerie", type:"Diagnostic", desc:"Boîte aux lettres Exchange saturée (Quotas dépassés)", cf:0.95},
+      {id:"R37", cat:"Messagerie", type:"Diagnostic", desc:"Pièce jointe excédant la limite autorisée (25 Mo)", cf:0.95},
+      {id:"R38", cat:"Messagerie", type:"Diagnostic", desc:"Corruption du fichier de données Outlook (.OST/.PST)", cf:0.90},
+      {id:"R39", cat:"Messagerie", type:"Diagnostic", desc:"Email légitime intercepté par la quarantaine antispam", cf:0.85},
+      {id:"R40", cat:"Applicatif", type:"Diagnostic", desc:"Indisponibilité du serveur d'application ERP", cf:0.95},
+      {id:"R41", cat:"Applicatif", type:"Diagnostic", desc:"Droits d'accès insuffisants sur le module ERP", cf:0.92},
+      {id:"R42", cat:"Applicatif", type:"Diagnostic", desc:"Blocage sécurité des macros VBA Excel par GPO", cf:0.90}
+    ];
+
+    // Navigation entre onglets
+    function switchTab(name) {
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('bg-white', 'text-teal-900', 'shadow-sm');
+        btn.classList.add('text-slate-600');
+      });
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+
+      const activeBtn = document.getElementById('tab-btn-' + name);
+      const activeContent = document.getElementById('tab-' + name);
+      if (activeBtn) {
+        activeBtn.classList.add('bg-white', 'text-teal-900', 'shadow-sm');
+        activeBtn.classList.remove('text-slate-600');
+      }
+      if (activeContent) {
+        activeContent.classList.remove('hidden');
+      }
+    }
+
+    // Gestion des scénarios
+    const SCENARIOS = {
+      1: {
+        title: "Câble réseau RJ45 débranché",
+        domain: "Réseau",
+        rule: "R11",
+        cf: 0.95,
+        target: "Support N1 Résolu",
+        steps: [
+          "Vérifier le branchement du câble RJ45 côté PC et côté prise murale (clic audible).",
+          "Tester avec un câble certifié Cat6 opérationnel.",
+          "Vérifier l'allumage des LED verte/orange sur le port de la carte réseau."
+        ],
+        tree: "icone_croix_rouge (1.0) + cable_ethernet (1.0) → defaut_liaison (0.90) + led_eteinte (1.0) → Câble RJ45 HS (0.95)"
+      },
+      2: {
+        title: "Spouleur d'impression Windows planté",
+        domain: "Impression",
+        rule: "R20",
+        cf: 0.90,
+        target: "Support N1 Résolu",
+        steps: [
+          "Ouvrir la console 'services.msc' avec élévation de privilèges.",
+          "Arrêter le service 'Spouleur d'impression' (Spooler).",
+          "Supprimer les fichiers temporaires dans 'C:\\Windows\\System32\\spool\\PRINTERS'.",
+          "Redémarrer le service et relancer un travail d'impression test."
+        ],
+        tree: "imprimante_allumee (1.0) + pas_voyant_erreur (1.0) + documents_bloques (1.0) → probleme_logiciel (0.85) → Spouleur planté (0.90)"
+      },
+      3: {
+        title: "Compte Active Directory verrouillé",
+        domain: "Sécurité/AD",
+        rule: "R26",
+        cf: 0.95,
+        target: "Support N1 / IAM",
+        steps: [
+          "Contrôler l'identité de l'utilisateur par canal sécurisé (matricule / manager).",
+          "Vérifier sur la console Active Directory la mention 'Ce compte est verrouillé'.",
+          "Déverrouiller le compte utilisateur et inviter à ressaisir le mot de passe."
+        ],
+        tree: "echec_session (1.0) + message_compte_verrouille (1.0) → Compte AD verrouillé (0.95)"
+      },
+      4: {
+        title: "Incident non résolu au Niveau 1 — Escalade vers N2",
+        domain: "Hors Périmètre N1",
+        rule: "Escalade N2",
+        cf: 0.00,
+        target: "Équipe Réseau & Télécoms (N2)",
+        steps: [
+          "Incident ne correspondant à aucune règle déterministe N1 de la base.",
+          "Consigner l'ensemble des symptômes testés dans le ticket d'incident GLPI/ITIL.",
+          "Escalader vers l'équipe N2 compétente avec SLA cible de 2 heures."
+        ],
+        tree: "Hypothèses N1 invalidées (CF < 0.20) → Déclenchement du protocole d'escalade ITIL N2"
+      }
+    };
+
+    function loadScenario(id) {
+      const s = SCENARIOS[id];
+      const isEscalade = id === 4;
+      const html = `
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="px-2.5 py-0.5 text-xs font-semibold rounded-full ${isEscalade ? 'bg-amber-100 text-amber-800' : 'bg-teal-100 text-teal-800'}">
+                ${s.domain}
+              </span>
+              <span class="text-xs text-slate-500">${s.rule}</span>
+            </div>
+            <h3 class="text-xl font-bold text-slate-900 mt-1">${s.title}</h3>
+          </div>
+          <div class="text-right">
+            <div class="text-2xl font-black ${isEscalade ? 'text-amber-700' : 'text-teal-700'}">
+              ${isEscalade ? 'ESCALADE N2' : 'CF ' + s.cf.toFixed(2)}
+            </div>
+            <div class="text-[11px] text-slate-500 uppercase font-bold tracking-wider">
+              ${isEscalade ? 'SLA : 2 heures' : 'Niveau de confiance'}
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4 text-xs">
+          <div>
+            <h4 class="font-bold uppercase tracking-wider text-slate-700 mb-2">Procédure opérationnelle N1 :</h4>
+            <ol class="space-y-1.5 list-decimal list-inside text-slate-700">
+              ${s.steps.map(step => `<li>${step}</li>`).join('')}
+            </ol>
+          </div>
+          <div>
+            <h4 class="font-bold uppercase tracking-wider text-slate-700 mb-2">Chaîne de déduction logique :</h4>
+            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 font-mono text-[11px] leading-relaxed">
+              ${s.tree}
+            </div>
+          </div>
+        </div>
+      `;
+      document.getElementById('scenario-result-view').innerHTML = html;
+    }
+
+    // Gestion du simulateur guidé
+    let simStep = 1;
+    let simAnswers = {};
+    const SIM_FLOW = [
+      {
+        question: "L'icône réseau affiche-t-elle une croix rouge ou un globe barré ?",
+        fact: "icone_reseau_croix_rouge",
+        why: "Tester si une anomalie de liaison physique (Couche 1) ou d'activation est présente."
+      },
+      {
+        question: "Utilisez-vous une connexion par câble Ethernet (RJ45) ?",
+        fact: "cable_ethernet_utilise",
+        why: "Différencier un incident sur réseau filaire d'un incident sans-fil Wi-Fi."
+      },
+      {
+        question: "Les voyants lumineux (LED) sur le port RJ45 du PC sont-ils éteints ?",
+        fact: "led_port_rj45_eteinte",
+        why: "Confirmer si la liaison matérielle est physiquement interrompue."
+      }
+    ];
+
+    function resetSimulator() {
+      simStep = 1;
+      simAnswers = {};
+      document.getElementById('sim-question-box').classList.remove('hidden');
+      document.getElementById('sim-result-box').classList.add('hidden');
+      document.getElementById('sim-facts-list').innerHTML = '<li class="text-slate-400 italic">Aucune réponse pour l' + "'instant.</li>";
+      renderSimStep();
+    }
+
+    function renderSimStep() {
+      if (simStep > SIM_FLOW.length) {
+        // Fin du simulateur
+        document.getElementById('sim-question-box').classList.add('hidden');
+        document.getElementById('sim-result-box').classList.remove('hidden');
+        return;
+      }
+      const cur = SIM_FLOW[simStep - 1];
+      document.getElementById('sim-step-num').textContent = "Question " + simStep + " sur " + SIM_FLOW.length;
+      document.getElementById('sim-question-text').textContent = cur.question;
+      document.getElementById('sim-why-hypothesis').textContent = "R11 - Câble Ethernet débranché ou endommagé";
+      document.getElementById('sim-why-subgoal').textContent = cur.why;
+    }
+
+    function answerSim(cf) {
+      const cur = SIM_FLOW[simStep - 1];
+      simAnswers[cur.fact] = cf;
+      simStep++;
+
+      // Mise à jour de la liste des faits
+      let factsHtml = '';
+      for (const [k, v] of Object.entries(simAnswers)) {
+        factsHtml += `<li class="flex justify-between items-center py-1 border-b border-slate-100">
+          <span class="font-mono text-slate-700">${k}</span>
+          <span class="font-bold text-teal-700">CF ${v.toFixed(2)}</span>
+        </li>`;
+      }
+      document.getElementById('sim-facts-list').innerHTML = factsHtml;
+
+      renderSimStep();
+    }
+
+    // Filtre des règles
+    function filterRules() {
+      const q = document.getElementById('rules-search').value.toLowerCase();
+      const cat = document.getElementById('rules-cat-filter').value;
+      const tbody = document.getElementById('rules-table-body');
+
+      const filtered = RULES.filter(r => {
+        const matchesCat = (cat === 'all' || r.cat === cat);
+        const matchesText = (r.id.toLowerCase().includes(q) || r.desc.toLowerCase().includes(q) || r.cat.toLowerCase().includes(q));
+        return matchesCat && matchesText;
+      });
+
+      tbody.innerHTML = filtered.map(r => `
+        <tr class="hover:bg-slate-50 transition">
+          <td class="p-3 font-mono font-bold text-teal-900">${r.id}</td>
+          <td class="p-3">${r.cat}</td>
+          <td class="p-3">
+            <span class="px-2 py-0.5 rounded text-[10px] font-semibold ${r.type === 'Diagnostic' ? 'bg-teal-100 text-teal-800' : 'bg-slate-100 text-slate-700'}">
+              ${r.type}
+            </span>
+          </td>
+          <td class="p-3 text-slate-800">${r.desc}</td>
+          <td class="p-3 text-right font-mono font-semibold text-teal-700">${r.cf.toFixed(2)}</td>
+        </tr>
+      `).join('');
+    }
+
+    // Initialisation au chargement
+    document.addEventListener('DOMContentLoaded', () => {
+      loadScenario(1);
+      renderSimStep();
+      filterRules();
+    });
+  </script>
+</body>
+</html>

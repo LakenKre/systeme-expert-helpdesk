@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% import "_macros.html" as ui %}
+{% block title %}{% if needs_category %}Choisir un domaine — Helpdesk N1{% else %}Question {{ progress.number }} — Diagnostic Helpdesk N1{% endif %}{% endblock %}
+
+{% block content %}
+{% if needs_category %}
+<div class="shell">
+  <section class="section">
+    <div class="stack-3" style="max-width:62ch">
+      <p class="eyebrow">Diagnostic guidé</p>
+      <h1 class="h1">Sélection du domaine</h1>
+      <p class="lede">Choisissez la catégorie correspondant à l'incident signalé.</p>
+    </div>
+
+    <div class="cat-grid" style="margin-top:32px">
+      {% for cat in categories %}
+      <form class="cat-form" method="post" action="{{ url_for('diagnostic') }}">
+        <input type="hidden" name="action" value="start">
+        <input type="hidden" name="category" value="{{ cat.key }}">
+        <button class="cat-card reveal" type="submit" style="--i:{{ loop.index0 + 1 }}">
+          <span class="cat-card__top">
+            <span class="cat-card__icon">{{ ui.icon(cat.icon) }}</span>
+            <span class="cat-card__arrow">{{ ui.icon('arrow', 18) }}</span>
+          </span>
+          <span class="cat-card__title">{{ cat.label }}</span>
+          <span class="cat-card__desc">{{ cat.description }}</span>
+          <span class="cat-card__meta"><strong>{{ cat.diagnostics }}</strong> diagnostics</span>
+        </button>
+      </form>
+      {% endfor %}
+    </div>
+  </section>
+</div>
+
+{% else %}
+<div class="shell workspace">
+  <aside class="rail">
+    <section class="panel rail__panel" aria-labelledby="rail-session">
+      <p class="rail__label" id="rail-session">Domaine</p>
+      <p class="rail__value">{{ category.label }}</p>
+      <div class="progress-row">
+        <span>Question <strong>{{ progress.number }}</strong></span>
+        <span><strong>{{ progress.answered }}</strong> réponse{% if progress.answered > 1 %}s{% endif %}</span>
+      </div>
+      <div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100"
+           aria-valuenow="{{ progress.percent }}" aria-label="Progression du diagnostic">
+        <div class="progress__bar" style="width:{{ progress.percent }}%"></div>
+      </div>
+    </section>
+
+    <section class="panel rail__panel" aria-labelledby="rail-answers">
+      <p class="rail__label" id="rail-answers">Réponses collectées</p>
+      {% if history %}
+      <div class="rail__chips">
+        {% for fact in history %}
+        <span class="chip">
+          <span class="chip__label">{{ fact_label(fact) }}</span>
+          <span class="chip__cf">{{ answers[fact]|cf }}</span>
+        </span>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="rail__empty" style="margin-top:8px">En attente de la première réponse.</p>
+      {% endif %}
+      <div class="stack-2" style="margin-top:16px">
+        <form method="post" action="{{ url_for('diagnostic') }}">
+          <input type="hidden" name="action" value="reset">
+          <button class="btn btn--quiet btn--block btn--sm" type="submit">{{ ui.icon('refresh', 16) }} Recommencer</button>
+        </form>
+      </div>
+    </section>
+
+    {% if demo %}
+    <section class="panel rail__panel">
+      <p class="rail__label">Scénario de test</p>
+      <p class="rail__value">{{ demo.title }}</p>
+      <p class="micro muted" style="margin-top:4px">{{ demo.pitch }}</p>
+    </section>
+    {% endif %}
+  </aside>
+
+  <div class="stack-4">
+    <div class="breadcrumb">
+      <a href="{{ url_for('diagnostic') }}">Diagnostic</a>
+      <span class="breadcrumb__sep">/</span>
+      <span>{{ category.label }}</span>
+    </div>
+
+    <section class="panel question-card reveal" aria-labelledby="question-title">
+      <div class="question-card__index">
+        <span class="eyebrow">Question {{ progress.number }}</span>
+        <span class="badge badge--neutral"><span class="badge__dot"></span>{{ category.label }}</span>
+      </div>
+      <h1 class="h2" id="question-title">{{ question.label }}</h1>
+
+      <form method="post" action="{{ url_for('diagnostic') }}" class="answers" aria-labelledby="question-title" style="margin-top:20px">
+        <input type="hidden" name="action" value="answer">
+        <input type="hidden" name="fact" value="{{ question.fact }}">
+        {% for choice in choices %}
+        <button class="answer" type="submit" name="cf" value="{{ choice.cf }}">
+          <span class="answer__dot" aria-hidden="true"></span>
+          <span class="answer__text">
+            <span class="answer__label">{{ choice.label }}</span>
+            <span class="answer__detail">{{ choice.detail }}</span>
+          </span>
+          <span class="answer__cf">CF {{ choice.cf|cf }}</span>
+        </button>
+        {% endfor %}
+      </form>
+
+      <details class="why">
+        <summary>{{ ui.icon('info', 18) }} Pourquoi cette question ? {{ ui.icon('chevron', 16) }}</summary>
+        <div class="why__body">
+          <div class="why__row">
+            <span class="why__key">Hypothèse</span>
+            <span class="why__val"><strong>{{ active_rule.description }}</strong> (CF règle {{ active_rule.cf|cf }})</span>
+          </div>
+          {% if active_inter %}
+          <div class="why__row">
+            <span class="why__key">Sous-but</span>
+            <span class="why__val"><strong>{{ active_inter.description }}</strong> (CF {{ active_inter.cf|cf }})</span>
+          </div>
+          {% endif %}
+          <div class="why__row">
+            <span class="why__key">Prémisses</span>
+            <span class="why__val">
+              <ul class="why__premises">
+                {% for premise in rule_premises %}
+                <li>{{ ui.icon('check', 16) }}<span>{{ premise.label }}{% if premise.fact in answers %} <span class="badge badge--success">observé</span>{% endif %}</span></li>
+                {% endfor %}
+              </ul>
+            </span>
+          </div>
+        </div>
+      </details>
+
+      <div class="question-foot">
+        <form method="post" action="{{ url_for('diagnostic') }}">
+          <input type="hidden" name="action" value="back">
+          <button class="btn btn--quiet btn--sm" type="submit" {% if not history %}disabled{% endif %}>{{ ui.icon('back', 16) }} Précédent</button>
+        </form>
+      </div>
+    </section>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

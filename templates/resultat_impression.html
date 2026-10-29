@@ -1,0 +1,122 @@
+{% import "_macros.html" as ui %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Feuille d'impression — Helpdesk N1</title>
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+</head>
+<body>
+  <div class="no-print" style="background:var(--surface);border-bottom:1px solid var(--line)">
+    <div class="shell" style="display:flex;align-items:center;justify-content:space-between;gap:16px;padding-top:12px;padding-bottom:12px">
+      <p class="small muted">Feuille d'impression · choisissez « Imprimer » puis « Enregistrer au format PDF » si besoin.</p>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn--primary btn--sm" type="button" data-print>Imprimer</button>
+        <button class="btn btn--quiet btn--sm" type="button" data-close>Fermer</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="sheet">
+    <div class="sheet__top">
+      <div class="sheet__brand">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:var(--primary)">
+          <path d="M6 4.5v15"/><path d="M6 12h8.2"/><path d="M14.2 12 17.4 16 22 5.5"/>
+        </svg>
+        <div>
+          <strong>Helpdesk N1 — fiche de diagnostic</strong>
+          <span>Système expert de support informatique · M2 MIAGE UFHB</span>
+        </div>
+      </div>
+      <div class="sheet__meta">
+        <strong>{{ printed_at }}</strong>
+        <span>Session locale · données non transmises</span>
+      </div>
+    </div>
+
+    {% if empty %}
+    <section class="sheet__section" style="margin-top:40px">
+      <h2>Aucun diagnostic en cours</h2>
+      <p class="small muted">Cette feuille s'imprime après un diagnostic. Aucune session n'est ouverte dans ce navigateur pour le moment.</p>
+      <p style="margin-top:16px"><a class="btn btn--secondary btn--sm" href="{{ url_for('diagnostic') }}">Ouvrir l'assistant de diagnostic</a></p>
+    </section>
+    {% elif primary %}
+    {% set rule, cf = primary %}
+    <div class="sheet__diag">
+      <div class="stack-2">
+        <span class="badge badge--primary">{{ rule.category }}</span>
+        <h1>{{ rule.description }}</h1>
+        <p class="small muted">Confiance {{ band.label }} · CF {{ cf|cf }} · seuil de décision 0.20</p>
+      </div>
+      {{ ui.gauge(cf, 104) }}
+    </div>
+
+    <section class="sheet__section">
+      <h2>Procédure de résolution</h2>
+      <ol class="sheet__steps">
+        {% for step in steps %}<li><span>{{ step }}</span></li>{% endfor %}
+      </ol>
+    </section>
+
+    <section class="sheet__section">
+      <h2>Pourquoi cette conclusion ?</h2>
+      <ul class="tree">{{ ui.tree_node(explanation) }}</ul>
+    </section>
+
+    <section class="sheet__section">
+      <h2>Observations recueillies</h2>
+      <ul class="sheet__steps">
+        {% for obs in observations %}
+        <li><span>{{ obs.label }} — CF {{ obs.cf|cf }}</span></li>
+        {% endfor %}
+      </ul>
+    </section>
+
+    <section class="sheet__section">
+      <h2>Cadre du domaine</h2>
+      <dl class="escalade__target" style="border-color:var(--line);background:var(--canvas)">
+        <div><dt>Cadre</dt><dd>{{ frame_key }}</dd></div>
+        <div><dt>SLA cible</dt><dd>{{ frame.sla_heures }} heures</dd></div>
+        <div><dt>Escalade</dt><dd>{{ frame.escalade_cible }}</dd></div>
+      </dl>
+    </section>
+    {% else %}
+    <div class="sheet__diag">
+      <div class="stack-2">
+        <span class="badge badge--accent">Escalade niveau 2</span>
+        <h1>Aucun diagnostic N1 confirmé</h1>
+        <p class="small muted">Les observations recueillies ne valident aucune hypothèse du domaine « {{ frame_key }} ».</p>
+      </div>
+    </div>
+    <section class="sheet__section">
+      <h2>Transmission au niveau 2</h2>
+      <dl class="escalade__target" style="border-color:var(--line);background:var(--canvas)">
+        <div><dt>File d'attente</dt><dd>{{ frame.escalade_cible }}</dd></div>
+        <div><dt>SLA cible</dt><dd>{{ frame.sla_heures }} heures</dd></div>
+        <div><dt>Droits admin</dt><dd>{{ 'Requis' if frame.droits_admin_requis else 'Non requis' }}</dd></div>
+      </dl>
+    </section>
+    <section class="sheet__section">
+      <h2>Observations transmises</h2>
+      <ul class="sheet__steps">
+        {% for obs in observations %}
+        <li><span>{{ obs.label }} — CF {{ obs.cf|cf }}</span></li>
+        {% else %}
+        <li><span>Aucune observation enregistrée.</span></li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endif %}
+
+    <div class="sheet__foot">
+      <span>Document généré par le système expert — 42 règles, facteurs de certitude de MYCIN.</span>
+      <span>Le diagnostic est une aide à la décision : la validation reste humaine.</span>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
+</body>
+</html>

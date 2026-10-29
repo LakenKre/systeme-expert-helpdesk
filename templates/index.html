@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% import "_macros.html" as ui %}
+{% block title %}Helpdesk N1 — Support informatique niveau 1{% endblock %}
+
+{% block content %}
+<div class="shell">
+  <section class="hero">
+    <div class="hero__grid">
+      <div class="hero__copy reveal" style="--i:0">
+        <p class="eyebrow">Master 2 MIAGE · Système expert</p>
+        <h1 class="h1">Support informatique niveau 1</h1>
+        <p class="lede hero__lede">Diagnostic guidé par chaînage arrière, calcul de certitude MYCIN et explicabilité pas à pas de la résolution.</p>
+        <div class="hero__actions">
+          <a class="btn btn--primary" href="{{ url_for('diagnostic') }}">Démarrer un diagnostic</a>
+          <a class="btn btn--secondary" href="{{ url_for('regles') }}">Consulter les {{ categories|sum(attribute='rules') if categories else 42 }} règles</a>
+        </div>
+      </div>
+
+      <aside class="preview reveal" style="--i:2" aria-label="Aperçu d'un diagnostic">
+        <div class="preview__top">
+          <span class="preview__label">Exemple de résultat</span>
+          <span class="badge badge--primary"><span class="badge__dot"></span>Impression</span>
+        </div>
+        <div class="preview__body">
+          {{ ui.gauge(0.90, 104) }}
+          <div class="stack-1">
+            <p class="preview__title">Imprimante réseau injoignable</p>
+            <p class="tiny muted">Indice de confiance · CF 0.90</p>
+          </div>
+        </div>
+        <div class="preview__steps">
+          <p class="preview__step"><span>1</span><span>Imprimer la page de configuration réseau depuis l'imprimante.</span></p>
+          <p class="preview__step"><span>2</span><span>Comparer l'adresse IP avec le port TCP/IP configuré sur le poste.</span></p>
+          <p class="preview__step"><span>3</span><span>Décocher « Utiliser l'imprimante hors connexion ».</span></p>
+        </div>
+      </aside>
+    </div>
+  </section>
+</div>
+
+<section class="section section--tight">
+  <div class="shell">
+    <div class="section-head">
+      <div class="section-head__text">
+        <p class="eyebrow">Périmètre</p>
+        <h2 class="h2">Domaines d'intervention</h2>
+        <p class="lede">Sélectionnez une catégorie pour démarrer le diagnostic.</p>
+      </div>
+      <div class="section-head__link">
+        <a class="link-arrow" href="{{ url_for('diagnostic') }}">Tous les domaines {{ ui.icon('arrow', 16) }}</a>
+      </div>
+    </div>
+
+    <div class="cat-grid">
+      {% for cat in categories %}
+      <form class="cat-form" method="post" action="{{ url_for('diagnostic') }}">
+        <input type="hidden" name="action" value="start">
+        <input type="hidden" name="category" value="{{ cat.key }}">
+        <button class="cat-card reveal" type="submit" style="--i:{{ loop.index0 + 1 }}">
+          <span class="cat-card__top">
+            <span class="cat-card__icon">{{ ui.icon(cat.icon) }}</span>
+            <span class="cat-card__arrow">{{ ui.icon('arrow', 18) }}</span>
+          </span>
+          <span class="cat-card__title">{{ cat.label }}</span>
+          <span class="cat-card__desc">{{ cat.description }}</span>
+          <span class="cat-card__meta">
+            <strong>{{ cat.rules }}</strong> règles
+            <span class="sep">/</span>
+            <strong>{{ cat.diagnostics }}</strong> diagnostics
+          </span>
+        </button>
+      </form>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="section section--tight">
+  <div class="shell">
+    <div class="demo-band reveal">
+      <div class="demo-band__head">
+        <div class="stack-1">
+          <p class="eyebrow">Démonstration</p>
+          <h2 class="h2">Scénarios de test</h2>
+        </div>
+        <p class="demo-band__note">Sélectionnez un cas pour observer l'inférence, la justification et la procédure.</p>
+      </div>
+      <div class="demo-grid">
+        {% for demo in demos %}
+        <form class="demo-form" method="post" action="{{ url_for('launch_demo', slug=demo.slug) }}">
+          <button class="demo-card{% if demo.escalade %} demo-card--escalade{% endif %}" type="submit">
+            <span class="demo-card__top">
+              <span class="badge badge--ink">{{ demo.category }}</span>
+              {{ ui.icon('arrow', 16) }}
+            </span>
+            <span class="demo-card__title">{{ demo.title }}</span>
+            <span class="demo-card__pitch">{{ demo.pitch }}</span>
+            <span class="demo-card__meta">{{ demo.meta }}</span>
+          </button>
+        </form>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="shell stack-5">
+    <div class="stats reveal">
+      <div class="stat">
+        <p class="stat__value">42 <small>règles</small></p>
+        <p class="stat__label">de production formalisées</p>
+      </div>
+      <div class="stat">
+        <p class="stat__value">2 <small>chaînages</small></p>
+        <p class="stat__label">arrière (guidé) et avant (saturation)</p>
+      </div>
+      <div class="stat">
+        <p class="stat__value">6 <small>domaines</small></p>
+        <p class="stat__label">réseau, imprimante, mail, poste, AD, ERP</p>
+      </div>
+      <div class="stat">
+        <p class="stat__value">30 <small>cas</small></p>
+        <p class="stat__label">de test rejoués à chaque démarrage</p>
+      </div>
+    </div>
+
+    <div class="resource-grid">
+      <a class="resource" href="{{ url_for('regles') }}">
+        <span class="resource__icon">{{ ui.icon('rule') }}</span>
+        <span class="resource__text"><strong>Base de règles</strong><span>Filtres, consultation et export JSON</span></span>
+        {{ ui.icon('arrow', 18) }}
+      </a>
+      <a class="resource" href="{{ url_for('evaluation') }}">
+        <span class="resource__icon">{{ ui.icon('chart') }}</span>
+        <span class="resource__text"><strong>Évaluation</strong><span>Résultats sur 30 cas et benchmark de bruit</span></span>
+        {{ ui.icon('arrow', 18) }}
+      </a>
+      <a class="resource" href="{{ url_for('a_propos') }}">
+        <span class="resource__icon">{{ ui.icon('book') }}</span>
+        <span class="resource__text"><strong>Architecture</strong><span>Modélisation, grille M2 et limites</span></span>
+        {{ ui.icon('arrow', 18) }}
+      </a>
+    </div>
+  </div>
+</section>
+{% endblock %}

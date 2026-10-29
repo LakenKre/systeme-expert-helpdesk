@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="32" height="32" role="img" aria-label="Favicon Helpdesk N1">
+  <title>Helpdesk N1 — Favicon</title>
+  <rect width="256" height="256" rx="56" fill="#0F5C6B"/>
+  <g fill="none" stroke="#FFFFFF" stroke-width="22" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M60 48 V208"/>
+    <path d="M196 48 V208"/>
+    <path d="M60 128 H96"/>
+    <path d="M160 128 H196"/>
+  </g>
+  <path d="M128 88 L168 128 L128 168 L88 128 Z M128 114 A14 14 0 1 0 128 142 A14 14 0 1 0 128 114 Z" fill="#38BDF8" fill-rule="evenodd"/>
+</svg>

@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% import "_macros.html" as ui %}
+{% block title %}Base de règles — Helpdesk N1{% endblock %}
+
+{% block content %}
+<div class="shell" style="padding-top:32px">
+  <div class="section-head">
+    <div class="section-head__text">
+      <p class="eyebrow">Base de connaissances</p>
+      <h1 class="h1">Base de connaissances</h1>
+      <p class="lede">{{ total }} règles de production auditables ({{ counts.diagnostic }} diagnostics finaux, {{ counts.intermediaire }} faits intermédiaires).</p>
+    </div>
+    <div class="section-head__link">
+      <a class="btn btn--secondary" href="{{ url_for('regles_export') }}" download>{{ ui.icon('download', 18) }} Exporter en JSON</a>
+    </div>
+  </div>
+
+  <form class="filters" method="get" action="{{ url_for('regles') }}" role="search">
+    <div class="field field--search">
+      <label class="field__label" for="q">Recherche</label>
+      <div class="field__control">
+        {{ ui.icon('search', 18) }}
+        <input class="input" type="search" id="q" name="q" value="{{ query }}" placeholder="Symptôme, diagnostic, mot-clé…" autocomplete="off">
+      </div>
+    </div>
+    <div class="field">
+      <label class="field__label" for="categorie">Catégorie</label>
+      <select class="select" id="categorie" name="categorie">
+        <option value="">Toutes les catégories</option>
+        {% for cat in categories %}
+        <option value="{{ cat.key }}"{% if category == cat.key %} selected{% endif %}>{{ cat.label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field">
+      <label class="field__label" for="type">Type de règle</label>
+      <select class="select" id="type" name="type">
+        <option value="">Tous les types</option>
+        <option value="diagnostic"{% if rule_type == 'diagnostic' %} selected{% endif %}>Diagnostic final</option>
+        <option value="intermediaire"{% if rule_type == 'intermediaire' %} selected{% endif %}>Intermédiaire</option>
+      </select>
+    </div>
+    <div class="filters__actions">
+      <button class="btn btn--primary" type="submit">Filtrer</button>
+      <a class="btn btn--quiet" href="{{ url_for('regles') }}">Effacer</a>
+    </div>
+  </form>
+
+  <div class="result-count">
+    <span><strong>{{ rules|length }}</strong> règle{% if rules|length > 1 %}s{% endif %} affichée{% if rules|length > 1 %}s{% endif %} sur {{ total }}</span>
+    {% if query or category or rule_type %}
+    <span>Filtres actifs{% if query %} · « {{ query }} »{% endif %}</span>
+    {% else %}
+    <span>Dépliez une règle pour examiner ses prémisses et sa procédure.</span>
+    {% endif %}
+  </div>
+
+  {% if rules %}
+  <div class="table-wrap">
+    <table class="table table--rules">
+      <caption class="sr-only">Liste des règles de production, filtrable par catégorie, type et texte.</caption>
+      <thead>
+        <tr>
+          <th scope="col">ID</th>
+          <th scope="col">Type</th>
+          <th scope="col">Catégorie</th>
+          <th scope="col">Règle</th>
+          <th scope="col">CF</th>
+          <th scope="col"><span class="sr-only">Détail</span></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for rule in rules %}
+        <tr class="rule-row">
+          <td class="cell-id" data-label="ID">{{ rule.id }}</td>
+          <td data-label="Type">
+            <span class="badge badge--{{ 'primary' if rule.type_key == 'diagnostic' else 'neutral' }}">{{ rule.type }}</span>
+          </td>
+          <td data-label="Catégorie" class="tiny">{{ rule.category }}</td>
+          <td class="cell-desc" data-label="Règle">{{ rule.description }}</td>
+          <td class="cell-cf" data-label="Confiance">{{ rule.cf|cf }}</td>
+          <td class="cell-actions" data-label="Détail">
+            <button class="disclosure" type="button" aria-expanded="false" aria-controls="detail-{{ rule.id }}" data-disclosure>
+              Détail {{ ui.icon('chevron', 14) }}
+            </button>
+          </td>
+        </tr>
+        <tr class="rule-detail" id="detail-{{ rule.id }}" hidden>
+          <td colspan="6">
+            <div class="rule-detail__inner">
+              <div>
+                <h3>Prémisses — SI</h3>
+                <ul class="rule-detail__premises">
+                  {% for premise in rule.premises %}
+                  <li>
+                    {{ ui.icon('check', 16) }}
+                    <span>{{ premise.label }}<span class="rule-detail__key">{{ premise.fact }}{% if premise.intermediate %} · fait intermédiaire{% endif %}</span></span>
+                  </li>
+                  {% endfor %}
+                </ul>
+              </div>
+              <div>
+                <h3>Conclusion — ALORS</h3>
+                <p class="small" style="margin-bottom:4px">{{ rule.conclusion }}</p>
+                <p class="micro muted" style="margin-bottom:16px">Confiance de la règle : {{ rule.cf|cf }}</p>
+                <h3>Procédure associée</h3>
+                {% if rule.steps %}
+                <ol class="rule-detail__steps">
+                  {% for step in rule.steps %}<li><span>{{ step }}</span></li>{% endfor %}
+                </ol>
+                {% else %}
+                <p class="rule-detail__empty">Fait intermédiaire alimentant les diagnostics du domaine.</p>
+                {% endif %}
+              </div>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="table-wrap" style="padding:32px;text-align:center">
+    <p class="h3">Aucune règle ne correspond à ces critères</p>
+    <p class="small muted" style="margin:8px 0 16px">Élargissez la recherche ou réinitialisez les filtres.</p>
+    <a class="btn btn--secondary" href="{{ url_for('regles') }}">Réinitialiser</a>
+  </div>
+  {% endif %}
+
+  <section class="panel" id="audit" style="margin-top:24px" aria-labelledby="audit-title">
+    <div class="panel-head">
+      <div>
+        <h2 id="audit-title">Audit de cohérence de la base</h2>
+        <p class="tiny muted">Vérification automatique d'unicité et de connectivité logique</p>
+      </div>
+      {% if anomalies %}
+      <span class="badge badge--accent">{{ anomalies|length }} anomalie{% if anomalies|length > 1 %}s{% endif %}</span>
+      {% else %}
+      <span class="badge badge--success"><span class="badge__dot"></span>Base cohérente</span>
+      {% endif %}
+    </div>
+
+    <ul class="checklist" style="margin-top:16px">
+      <li>
+        {{ ui.icon('check', 16) }}
+        <span><strong>Doublons de prémisses :</strong> {{ report.doublons_premisses|length }} conflit détecté.
+        {% for item in report.doublons_premisses %}<span class="checklist__detail">{{ item }}</span>{% endfor %}</span>
+      </li>
+      <li>
+        {{ ui.icon('check', 16) }}
+        <span><strong>Faits intermédiaires orphelins :</strong> {{ report.faits_intermediaires_inutilises|length }} fait inutilisé.
+        {% for item in report.faits_intermediaires_inutilises %}<span class="checklist__detail">{{ item }}</span>{% endfor %}</span>
+      </li>
+    </ul>
+  </section>
+</div>
+{% endblock %}

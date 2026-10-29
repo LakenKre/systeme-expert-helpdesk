@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% import "_macros.html" as ui %}
+{% block title %}Évaluation — Helpdesk N1{% endblock %}
+
+{% block content %}
+<div class="shell" style="padding-top:32px">
+  <div class="section-head">
+    <div class="section-head__text">
+      <p class="eyebrow">Évaluation</p>
+      <h1 class="h1">Évaluation du système</h1>
+      <p class="lede">Validation sur 30 cas d'incidents et benchmark comparatif de sensibilité au bruit.</p>
+    </div>
+    <div class="section-head__link">
+      <a class="link-arrow" href="{{ url_for('regles') }}">Voir les règles {{ ui.icon('arrow', 16) }}</a>
+    </div>
+  </div>
+
+  <div class="callout callout--accent">
+    {{ ui.icon('alert') }}
+    <span><strong>Note méthodologique :</strong> les 30 cas vérifient la cohérence interne de la base de règles. Le benchmark compare la robustesse du système expert face à 3 modèles scikit-learn sur des données bruitées.</span>
+  </div>
+
+  <div class="metrics" style="margin-top:24px">
+    <div class="metric">
+      <p class="metric__label">Cas évalués</p>
+      <p class="metric__value">{{ total_cases }} <small>cas</small></p>
+      <p class="metric__foot">6 domaines + 1 cas escalade</p>
+    </div>
+    <div class="metric metric--success">
+      <p class="metric__label">Conformité</p>
+      <p class="metric__value">{{ correct }} / {{ total_cases }}</p>
+      <p class="metric__foot">diagnostic attendu retrouvé</p>
+    </div>
+    <div class="metric">
+      <p class="metric__label">Précision logique</p>
+      <p class="metric__value">{{ accuracy }} <small>%</small></p>
+      <p class="metric__foot">cohérence de la base</p>
+    </div>
+    <div class="metric">
+      <p class="metric__label">Règles actives</p>
+      <p class="metric__value">{{ stats.rules }} <small>règles</small></p>
+      <p class="metric__foot">32 finales, 10 intermédiaires</p>
+    </div>
+  </div>
+
+  {% if by_category %}
+  <div class="category-tally">
+    {% for item in by_category %}
+    <span class="tally">{{ item.label }} <strong>{{ item.ok }}/{{ item.total }}</strong></span>
+    {% endfor %}
+    <span class="tally">Escalade N2 <strong>{{ 1 if rows[-1].ok else 0 }}/1</strong></span>
+  </div>
+  {% endif %}
+
+  <div class="result-count">
+    <span>Détail des {{ total_cases }} cas</span>
+    <span>Attendu vs prédit</span>
+  </div>
+
+  <div class="table-wrap">
+    <table class="table table--cases">
+      <caption class="sr-only">Résultat du système expert sur les trente cas d'évaluation.</caption>
+      <thead>
+        <tr>
+          <th scope="col">Cas</th>
+          <th scope="col">Scénario</th>
+          <th scope="col">Attendu</th>
+          <th scope="col">Prédit</th>
+          <th scope="col">CF</th>
+          <th scope="col">Statut</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr class="case-row">
+          <td class="cell-id" data-label="Cas">{{ row.id }}</td>
+          <td class="cell-desc" data-label="Scénario">{{ row.desc }}</td>
+          <td data-label="Attendu"><span class="cell-code">{{ row.expected }}</span></td>
+          <td data-label="Prédit"><span class="cell-code">{{ row.pred }}</span></td>
+          <td class="cell-cf" data-label="CF">{{ row.cf|cf }}</td>
+          <td data-label="Statut">
+            {% if row.ok %}
+            <span class="status status--ok">{{ ui.icon('check', 16) }} Conforme</span>
+            {% else %}
+            <span class="status status--ko">{{ ui.icon('alert', 16) }} Écart</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <section class="panel" id="benchmark" style="margin-top:24px" aria-labelledby="bench-title">
+    <div class="panel-head">
+      <div class="stack-1">
+        <h2 id="bench-title">Benchmark de sensibilité au bruit</h2>
+        <p class="tiny muted">10 % d'omissions, 15 % de symptômes parasites (300 tickets par itération).</p>
+      </div>
+      <form id="bench-form" method="post" action="{{ url_for('evaluation_benchmark') }}">
+        <button class="btn btn--primary" id="bench-run" type="submit">
+          <span class="btn__spinner spinner" aria-hidden="true"></span>
+          <span class="btn__label">Lancer le benchmark</span>
+        </button>
+      </form>
+    </div>
+
+    <div class="bench__legend">
+      <span><span class="legend-swatch legend-swatch--ink"></span>Système expert (symbolique)</span>
+      <span><span class="legend-swatch"></span>Modèles supervisés (scikit-learn)</span>
+    </div>
+
+    <p class="tiny muted" id="bench-status" role="status" style="margin-top:12px"></p>
+
+    <div class="bench-state" id="bench-output" style="margin-top:16px">
+      <div class="bench-empty" id="bench-empty">
+        {{ ui.icon('chart') }}
+        <span>Cliquez sur « Lancer le benchmark » pour calculer les précisions sous bruit.</span>
+      </div>
+      <div class="bench" id="bench-bars" hidden aria-live="polite"></div>
+      <div class="table-wrap" id="bench-table" hidden></div>
+      <p class="tiny muted" id="bench-note" hidden>Les modèles statistiques compensent les omissions par proximité vectorielle, alors que le système expert exige la satisfaction rigoureuse de ses prémisses.</p>
+    </div>
+
+    <noscript>
+      <p class="callout callout--info" style="margin-top:16px">{{ ui.icon('info') }}<span>Le lancement du benchmark nécessite JavaScript.</span></p>
+    </noscript>
+  </section>
+</div>
+{% endblock %}

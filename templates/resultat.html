@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% import "_macros.html" as ui %}
+{% block title %}{% if primary %}Résultat du diagnostic — Helpdesk N1{% else %}Escalade niveau 2 — Helpdesk N1{% endif %}{% endblock %}
+
+{% block content %}
+<div class="shell result">
+  <div class="breadcrumb no-print">
+    <a href="{{ url_for('diagnostic') }}">Diagnostic</a>
+    <span class="breadcrumb__sep">/</span>
+    <span>Résultat</span>
+    {% if category_meta %}
+    <span class="breadcrumb__sep">/</span>
+    <span>{{ category_meta.label }}</span>
+    {% endif %}
+  </div>
+
+  {% if empty %}
+  <section class="panel panel--pad-lg" style="text-align:center;padding-top:48px;padding-bottom:48px">
+    <span class="cat-card__icon" style="margin:0 auto">{{ ui.icon('target') }}</span>
+    <h1 class="h2" style="margin-top:16px">Aucun diagnostic en cours</h1>
+    <p class="lede" style="max-width:52ch;margin:8px auto 0">Lancez un diagnostic guidé ou choisissez un scénario de test pour afficher un résultat.</p>
+    <div class="result-actions" style="justify-content:center">
+      <a class="btn btn--primary" href="{{ url_for('diagnostic') }}">Démarrer un diagnostic</a>
+      <a class="btn btn--secondary" href="{{ url_for('index') }}">Voir les scénarios</a>
+    </div>
+  </section>
+
+  {% elif primary %}
+  {% set rule, cf = primary %}
+
+  <article class="result-hero result-hero--{{ band.key }} reveal" aria-live="polite">
+    <div class="result-hero__main">
+      <div class="result-hero__meta">
+        <span class="badge badge--primary"><span class="badge__dot"></span>{{ rule.category }}</span>
+        <span class="badge badge--{{ band.tone }}">Confiance {{ band.label }}</span>
+        {% if demo %}<span class="badge badge--neutral">Scénario de test</span>{% endif %}
+      </div>
+      <h1>{{ rule.description }}</h1>
+      <p class="result-hero__rule">{{ steps|length }} étapes de résolution · {{ observations|length }} observation(s) recueillie(s)</p>
+    </div>
+    <div class="result-hero__gauge">
+      {{ ui.gauge(cf, 148) }}
+      <p class="result-hero__gauge-label">Confiance MYCIN · CF {{ cf|cf }}</p>
+    </div>
+  </article>
+
+  <div class="result-grid">
+    <section class="panel" aria-labelledby="procedure-title">
+      <div class="panel-head">
+        <h2 id="procedure-title">Procédure de résolution</h2>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="panel-head__hint">{{ steps|length }} étapes</span>
+          <button class="btn btn--quiet btn--sm no-print" type="button" id="copy-procedure-btn" title="Copier les étapes dans le presse-papiers">
+            {{ ui.icon('check', 14) }} Copier
+          </button>
+        </div>
+      </div>
+      <div id="procedure-steps-container">
+        {{ ui.step_list(steps) }}
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="explain-title">
+      <div class="panel-head">
+        <h2 id="explain-title">Pourquoi cette conclusion ?</h2>
+        <span class="panel-head__hint">Chaîne de raisonnement</span>
+      </div>
+      <ul class="tree">
+        {{ ui.tree_node(explanation) }}
+      </ul>
+    </section>
+  </div>
+
+  {% if secondary %}
+  <section class="panel" style="margin-top:24px" aria-labelledby="secondary-title">
+    <div class="panel-head">
+      <h2 id="secondary-title">Diagnostics secondaires</h2>
+      <span class="panel-head__hint">Hypothèses alternatives</span>
+    </div>
+    <div class="secondary-list">
+      {% for other, other_cf in secondary %}
+      <div class="secondary">
+        <div>
+          <p class="secondary__title">{{ other.description }}</p>
+          <p class="secondary__meta">{{ other.category }} · confiance {{ 'élevée' if other_cf >= 0.85 else ('moyenne' if other_cf >= 0.6 else 'faible') }}</p>
+        </div>
+        <div class="secondary__score">
+          <span>{{ (other_cf * 100)|round|int }} %</span>
+          {{ ui.meter(other_cf) }}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  <div class="result-actions no-print">
+    <form method="post" action="{{ url_for('diagnostic') }}">
+      <input type="hidden" name="action" value="reset">
+      <button class="btn btn--primary" type="submit">{{ ui.icon('refresh', 18) }} Recommencer</button>
+    </form>
+    <a class="btn btn--secondary" href="{{ url_for('resultat_impression') }}" target="_blank" rel="noopener">{{ ui.icon('printer', 18) }} Imprimer la fiche</a>
+    <span class="spacer"></span>
+    <a class="btn btn--ghost" href="{{ url_for('regles') }}">Consulter les règles</a>
+  </div>
+
+  <section class="frame-strip" aria-label="Cadre du domaine">
+    <div class="frame-strip__item">
+      <p class="frame-strip__label">Cadre « {{ frame_key }} »</p>
+      <p class="frame-strip__value">SLA cible {{ frame.sla_heures }} h</p>
+    </div>
+    <div class="frame-strip__item">
+      <p class="frame-strip__label">Escalade si non résolu</p>
+      <p class="frame-strip__value">{{ frame.escalade_cible }}</p>
+    </div>
+    <div class="frame-strip__item">
+      <p class="frame-strip__label">Droits administrateur</p>
+      <p class="frame-strip__value">{{ 'Requis' if frame.droits_admin_requis else 'Non requis' }}</p>
+    </div>
+  </section>
+
+  {% else %}
+
+  <section class="escalade reveal" aria-live="polite">
+    <div class="escalade__head">
+      <span class="escalade__icon">{{ ui.icon('alert', 20) }}</span>
+      <div class="stack-1">
+        <p class="eyebrow">Escalade niveau 2</p>
+        <h1 class="h2">Aucun diagnostic N1 confirmé</h1>
+      </div>
+    </div>
+    <p class="lede" style="max-width:70ch">Aucune hypothèse N1 validée pour le domaine « {{ frame_key }} ». Le dossier est transféré au niveau 2 avec les observations recueillies.</p>
+
+    <dl class="escalade__target">
+      <div>
+        <dt>File d'attente</dt>
+        <dd>{{ frame.escalade_cible }}</dd>
+      </div>
+      <div>
+        <dt>SLA cible</dt>
+        <dd>{{ frame.sla_heures }} heures</dd>
+      </div>
+      <div>
+        <dt>Droits administrateur</dt>
+        <dd>{{ 'Requis' if frame.droits_admin_requis else 'Non requis' }}</dd>
+      </div>
+    </dl>
+
+    <div>
+      <p class="rail__label">Observations transmises ({{ observations|length }})</p>
+      {% if observations %}
+      <div class="rail__chips" style="flex-direction:row;flex-wrap:wrap">
+        {% for obs in observations %}
+        <span class="chip"><span class="chip__label">{{ obs.label }}</span><span class="chip__cf">{{ obs.cf|cf }}</span></span>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="tiny muted" style="margin-top:8px">Aucune observation enregistrée.</p>
+      {% endif %}
+    </div>
+
+    <div class="result-actions no-print" style="margin-top:8px">
+      <form method="post" action="{{ url_for('diagnostic') }}">
+        <input type="hidden" name="action" value="reset">
+        <button class="btn btn--primary" type="submit">{{ ui.icon('refresh', 18) }} Recommencer</button>
+      </form>
+      <a class="btn btn--secondary" href="{{ url_for('diagnostic') }}">Changer de domaine</a>
+      <span class="spacer"></span>
+      <a class="btn btn--ghost" href="{{ url_for('regles') }}">Voir les règles</a>
+    </div>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

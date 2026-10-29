@@ -852,72 +852,540 @@ def interactive_cli():
         print("Aucun diagnostic N1 confirmé -> escalade vers le Support Niveau 2.")
 
 
-def create_flask_app():
-    from flask import Flask, request, render_template_string
+# ==============================================================================
+# 8. INTERFACE WEB : HELPERS DE PRÉSENTATION
+#    (aucune logique d'inférence ici : uniquement de la mise en forme)
+# ==============================================================================
 
-    app = Flask(__name__)
+UI_CATEGORIES: List[Dict] = [
+    {"key": "Réseau", "label": "Réseau", "icon": "network",
+     "description": "Câble, Wi-Fi, DHCP, DNS, proxy, VPN et lecteurs partagés."},
+    {"key": "Impression", "label": "Impression", "icon": "printer",
+     "description": "File d'attente, bourrage, toner, tambour et pilotes."},
+    {"key": "Messagerie", "label": "Messagerie", "icon": "mail",
+     "description": "Outlook, quota de boîte, pièces jointes et antispam."},
+    {"key": "Poste/OS", "label": "Poste de travail", "icon": "monitor",
+     "description": "Windows, disque, mémoire, affichage, pilotes et ports USB."},
+    {"key": "Sécurité/AD", "label": "Sécurité & annuaire", "icon": "shield",
+     "description": "Ouverture de session, compte, mot de passe et double facteur."},
+    {"key": "Applicatif", "label": "Applicatif métier", "icon": "apps",
+     "description": "ERP, habilitations, erreurs serveur et macros Office."},
+]
+
+UI_ANSWERS: List[Dict] = [
+    {"cf": 1.0, "label": "Oui, certain", "detail": "C'est exactement ce que j'observe."},
+    {"cf": 0.8, "label": "Probablement", "detail": "Cela correspond à ce que je vois, sans certitude totale."},
+    {"cf": 0.5, "label": "Peut-être", "detail": "Je ne suis pas sûr, mais c'est plausible."},
+    {"cf": 0.0, "label": "Non", "detail": "Ce n'est pas le cas."},
+]
+
+UI_DEMOS: List[Dict] = [
+    {"slug": "imprimante", "title": "Imprimante hors ligne", "category": "Impression",
+     "meta": "Confiance attendue 0.90",
+     "pitch": "Statut « hors connexion » et ping en échec.",
+     "facts": {"imprimante_reseau_statut_hors_ligne": 1.0, "ping_imprimante_ko": 1.0}},
+    {"slug": "erp", "title": "Erreur 500 sur l'ERP", "category": "Applicatif",
+     "meta": "Confiance attendue 0.95",
+     "pitch": "Le réseau répond, l'application renvoie une erreur serveur.",
+     "facts": {"incident_couche_applicative": 1.0, "erreur_http_500_ou_503": 1.0}},
+    {"slug": "dns", "title": "Internet par IP, pas par nom", "category": "Réseau",
+     "meta": "Confiance attendue 0.92",
+     "pitch": "Le ping externe passe, les sites ne se résolvent plus.",
+     "facts": {"connectivite_ip_externe_ok": 1.0, "site_web_inaccessible_par_nom": 1.0}},
+    {"slug": "escalade", "title": "Rien ne confirme une panne N1", "category": "Messagerie",
+     "meta": "Escalade vers le niveau 2", "escalade": True,
+     "pitch": "Outlook fonctionne, les autres courriels passent normalement.",
+     "facts": {"outlook_connecte": 1.0, "envoi_impossible": 0.0,
+               "email_attendu_non_recu": 0.0, "outlook_bloque_demarrage": 0.0}},
+]
+
+UI_STATS = {"rules": 42, "chainings": 2, "cases": 30, "domains": 6}
+
+
+def ui_category(key: Optional[str]) -> Dict:
+    for cat in UI_CATEGORIES:
+        if cat["key"] == key:
+            return cat
+    return {"key": "", "label": "Tous les domaines", "icon": "apps", "description": ""}
+
+
+def ui_demo(slug: str) -> Optional[Dict]:
+    for item in UI_DEMOS:
+        if item["slug"] == slug:
+            return item
+    return None
+
+
+def ui_category_counts(rules: List[Rule]) -> List[Dict]:
+    """Catégories enrichies du nombre de règles (total et diagnostics finaux)."""
+    out = []
+    for cat in UI_CATEGORIES:
+        scoped = [r for r in rules if r.category == cat["key"]]
+        item = dict(cat)
+        item["rules"] = len(scoped)
+        item["diagnostics"] = len([r for r in scoped if r.is_diagnostic])
+        out.append(item)
+    return out
+
+
+def ui_fact_label(fact: str) -> str:
+    """Libellé humain d'un fait ; la clé technique n'est jamais montrée en premier plan."""
+    question = QUESTIONS_SYMPTOMES.get(fact)
+    if question:
+        return question
+    return "Le symptôme « " + fact.replace("_", " ") + " » est-il présent ?"
+
+
+def ui_rule_premises(rule: Rule, inter_map: Dict[str, Rule]) -> List[Dict]:
+    return [{"fact": p, "label": ui_fact_label(p), "intermediate": p in inter_map}
+            for p in rule.premises]
+
+
+def ui_steps(resolution: str) -> List[str]:
+    steps = []
+    for line in (resolution or "").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        head, sep, rest = line.partition(". ")
+        if sep and head.strip().isdigit():
+            line = rest.strip()
+        steps.append(line)
+    return steps
+
+
+def ui_band(cf: float) -> Dict:
+    if cf >= 0.85:
+        return {"key": "high", "label": "élevée", "tone": "success"}
+    if cf >= 0.60:
+        return {"key": "mid", "label": "moyenne", "tone": "accent"}
+    return {"key": "low", "label": "faible", "tone": "primary"}
+
+
+def ui_normalize(text: str) -> str:
+    import unicodedata
+    text = unicodedata.normalize("NFKD", str(text))
+    text = "".join(c for c in text if not unicodedata.combining(c))
+    return text.lower().strip()
+
+
+def ui_next_step(rules: List[Rule], answers: Dict[str, float], category: str,
+                 threshold: float = 0.20) -> Tuple[Optional[str], Optional[Rule], Optional[Rule]]:
+    """Reprend l'algorithme de parcours guidé : première hypothèse dont il manque une prémisse."""
+    inter_map = {r.conclusion: r for r in rules if not r.is_diagnostic}
+    candidates = [r for r in rules if r.is_diagnostic and r.category == category]
+    for diag in candidates:
+        possible, missing, inter_ref = True, None, None
+        for prem in diag.premises:
+            if prem in inter_map:
+                inter = inter_map[prem]
+                for sub in inter.premises:
+                    if sub in answers:
+                        if answers[sub] < threshold:
+                            possible = False
+                            break
+                    elif missing is None:
+                        missing, inter_ref = sub, inter
+                if not possible:
+                    break
+            else:
+                if prem in answers:
+                    if answers[prem] < threshold:
+                        possible = False
+                        break
+                elif missing is None:
+                    missing = prem
+        if possible and missing is not None:
+            return missing, diag, inter_ref
+    return None, None, None
+
+
+def ui_progress(answers: Dict[str, float], active_rule: Optional[Rule],
+                active_inter: Optional[Rule], inter_map: Dict[str, Rule]) -> Dict:
+    pending = []
+    if active_rule is not None:
+        pending += [p for p in active_rule.premises if p not in answers and p not in inter_map]
+    if active_inter is not None:
+        pending += [p for p in active_inter.premises if p not in answers and p not in inter_map]
+    answered = len(answers)
+    remaining = len(set(pending))
+    total = max(answered + remaining, answered + 1)
+    return {"answered": answered, "remaining": remaining, "total": total,
+            "percent": min(100, int(round(100 * answered / total))), "number": answered + 1}
+
+
+def _ui_fact_node(engine: HelpdeskInferenceEngine, fact: str, answers: Dict[str, float],
+                  inter_map: Dict[str, Rule], depth: int, seen: set) -> Dict:
+    node = {"fact": fact, "label": ui_fact_label(fact), "cf": engine.get_fact_cf(fact),
+            "rule": None, "kind": "observation", "children": []}
+    if fact in seen or depth > 5:
+        return node
+    if fact in answers:
+        return node
+    inter = inter_map.get(fact)
+    if inter is not None and inter.id in engine.fired_rules_history:
+        node["rule"] = inter
+        node["kind"] = "inference"
+        node["label"] = inter.description
+        for prem in inter.premises:
+            node["children"].append(
+                _ui_fact_node(engine, prem, answers, inter_map, depth + 1, seen | {fact}))
+    return node
+
+
+def ui_explanation(engine: HelpdeskInferenceEngine, rule: Rule, answers: Dict[str, float],
+                   inter_map: Dict[str, Rule]) -> Dict:
+    """Arbre d'explication lisible : conclusion -> règle -> prémisses (récursif)."""
+    node = {"fact": rule.conclusion, "label": rule.description,
+            "cf": engine.get_fact_cf(rule.conclusion), "rule": rule,
+            "kind": "diagnostic", "children": []}
+    for prem in rule.premises:
+        node["children"].append(
+            _ui_fact_node(engine, prem, answers, inter_map, 1, {rule.conclusion}))
+    return node
+
+
+def ui_rule_detail(rule: Rule, inter_map: Dict[str, Rule]) -> Dict:
+    return {
+        "id": rule.id, "category": rule.category,
+        "type": "Diagnostic" if rule.is_diagnostic else "Intermédiaire",
+        "type_key": "diagnostic" if rule.is_diagnostic else "intermediaire",
+        "cf": rule.cf, "description": rule.description, "conclusion": rule.conclusion,
+        "premises": ui_rule_premises(rule, inter_map),
+        "steps": ui_steps(rule.resolution),
+    }
+
+
+def create_flask_app():
+    from pathlib import Path
+    import os
+    from datetime import datetime
+    from flask import (Flask, Response, abort, jsonify, redirect, render_template,
+                       request, session, url_for)
+
+    base_dir = Path(__file__).resolve().parent
+    app = Flask(
+        __name__,
+        template_folder=str(base_dir / "templates"),
+        static_folder=str(base_dir / "static"),
+    )
+    app.secret_key = os.urandom(32)
+    app.json.ensure_ascii = False
+    app.jinja_env.globals["fact_label"] = ui_fact_label
+
     ontology = build_domain_ontology()
     rules = build_knowledge_base()
-    engine = HelpdeskInferenceEngine(rules, ontology)
     admin = RuleBaseAdminTool(rules)
+    inter_map = {r.conclusion: r for r in rules if not r.is_diagnostic}
+    categories = ui_category_counts(rules)
+    benchmark_cache: Dict[str, object] = {}
+    nav_items = [
+        {"endpoint": "index", "label": "Accueil"},
+        {"endpoint": "diagnostic", "label": "Diagnostic"},
+        {"endpoint": "regles", "label": "Règles"},
+        {"endpoint": "evaluation", "label": "Évaluation"},
+        {"endpoint": "a_propos", "label": "À propos"},
+    ]
 
-    HTML = """
-    <!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
-    <title>Système Expert Helpdesk N1 - M2 MIAGE UFHB</title>
-    <style>
-      body{font-family:Arial,sans-serif;margin:25px;background:#f4f6f9;color:#222}
-      h1,h2{color:#0b5394}
-      .card{background:#fff;padding:20px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,.1);margin-bottom:20px}
-      .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;max-height:360px;overflow-y:auto;padding:10px;border:1px solid #ddd}
-      .btn{background:#0b5394;color:#fff;padding:10px 18px;border:none;border-radius:5px;cursor:pointer;font-size:15px}
-      .diag{border-left:5px solid #2e7d32;background:#e8f5e9;padding:15px;margin-top:15px}
-      pre{background:#272822;color:#f8f8f2;padding:12px;border-radius:5px;overflow-x:auto}
-    </style></head><body>
-    <h1>Système Expert de Support Informatique (Helpdesk Niveau 1)</h1>
-    <p><strong>Master 2 MIAGE – UFHB</strong> | MYCIN ({{ rules|length }} règles actives)</p>
-    <div class="card"><h2>1. Diagnostic par chaînage avant</h2>
-      <form method="POST" action="/">
-        <div class="grid">
-        {% for key, q in questions.items() %}
-          <label><input type="checkbox" name="symptoms" value="{{ key }}" {% if key in selected %}checked{% endif %}>
-          <strong>{{ key }}</strong> : {{ q }}</label>
-        {% endfor %}
-        </div><br>
-        <label>Certitude sur les symptômes cochés :
-          <input type="number" name="user_cf" value="1.0" min="0.2" max="1.0" step="0.1"></label>
-        <button type="submit" class="btn">Lancer le moteur d'inférence</button>
-      </form>
-      {% if diagnostics is not none %}
-        {% if diagnostics %}
-          {% for rule, cf in diagnostics %}
-          <div class="diag"><h3>Diagnostic ({{ rule.id }} - {{ rule.category }}) : {{ rule.description }}</h3>
-            <p><strong>Confiance (MYCIN) :</strong> {{ (cf * 100)|round(1) }}% (CF = {{ cf }})</p>
-            <p><strong>Procédure de résolution :</strong></p><pre>{{ rule.resolution }}</pre>
-            <p><strong>Pourquoi cette conclusion ?</strong></p><pre>{{ explanations[rule.conclusion] }}</pre>
-          </div>
-          {% endfor %}
-        {% else %}
-          <p style="color:#b71c1c;font-weight:bold;margin-top:15px">Aucun diagnostic N1 trouvé : escalade vers le Niveau 2.</p>
-        {% endif %}
-      {% endif %}
-    </div>
-    <div class="card"><h2>2. Base de connaissances ({{ rules|length }} règles)</h2>
-      <p>Vérification de cohérence : {{ consistency }}</p></div>
-    </body></html>
-    """
+    # ---------------------------------------------------------------- session
+    def answers() -> Dict[str, float]:
+        raw = session.get("answers")
+        if not isinstance(raw, dict):
+            return {}
+        clean = {}
+        for key, value in raw.items():
+            try:
+                clean[str(key)] = float(value)
+            except (TypeError, ValueError):
+                continue
+        return clean
 
-    @app.route("/", methods=["GET", "POST"])
+    def write_state(category: Optional[str], new_answers: Dict[str, float],
+                    history: List[str], demo: Optional[str] = None):
+        session["category"] = category
+        session["answers"] = new_answers
+        session["history"] = history
+        if demo is None:
+            session.pop("demo", None)
+        else:
+            session["demo"] = demo
+
+    def clear_state():
+        session.pop("category", None)
+        session.pop("answers", None)
+        session.pop("history", None)
+        session.pop("demo", None)
+
+    def current_category() -> Optional[str]:
+        cat = session.get("category")
+        return cat if cat in {c["key"] for c in UI_CATEGORIES} else None
+
+    def run(initial: Dict[str, float]):
+        """Moteur neuf par requête : l'état du moteur n'est jamais partagé entre visiteurs."""
+        engine = HelpdeskInferenceEngine(rules, ontology)
+        found = engine.forward_chaining(initial)
+        return engine, found
+
+    def result_payload():
+        known = answers()
+        category = current_category()
+        engine, found = run(known)
+        scoped = [(r, cf) for r, cf in found if not category or r.category == category]
+        primary = scoped[0] if scoped else None
+        frame_key = category or (primary[0].category if primary else "Actif_IT")
+        frame = ontology[frame_key].to_dict()
+        explanation = ui_explanation(engine, primary[0], known, inter_map) if primary else None
+        rule_cf = primary[0].cf if primary else 0.0
+        min_premise = min((engine.get_fact_cf(p) for p in primary[0].premises), default=0.0) if primary else 0.0
+        observations = []
+        history = session.get("history") or []
+        ordered = [f for f in history if f in known] + [f for f in known if f not in history]
+        for fact in ordered:
+            observations.append({"fact": fact, "label": ui_fact_label(fact), "cf": known[fact]})
+        return {
+            "answers": known, "category": category,
+            "category_meta": ui_category(category) if category else None,
+            "primary": primary,
+            "band": ui_band(primary[1]) if primary else None,
+            "steps": ui_steps(primary[0].resolution) if primary else [],
+            "explanation": explanation,
+            "rule_cf": rule_cf, "min_premise": min_premise,
+            "secondary": scoped[1:], "frame": frame, "frame_key": frame_key,
+            "observations": observations,
+            "demo": ui_demo(session.get("demo")) if session.get("demo") else None,
+            "confidence_labels": [("Élevée", "0.85 et plus"), ("Moyenne", "0.60 à 0.84"), ("Faible", "moins de 0.60")],
+        }
+
+    # ------------------------------------------------------------ contexte
+    @app.context_processor
+    def inject_globals():
+        return {
+            "nav_items": nav_items,
+            "categories": categories,
+            "stats": UI_STATS,
+        }
+
+    @app.template_filter("cf")
+    def format_cf(value) -> str:
+        try:
+            return f"{float(value):.2f}"
+        except (TypeError, ValueError):
+            return "0.00"
+
+    @app.template_filter("pct")
+    def format_pct(value) -> str:
+        try:
+            return f"{round(float(value) * 100):d}"
+        except (TypeError, ValueError):
+            return "0"
+
+    # --------------------------------------------------------------- accueil
+    @app.get("/")
     def index():
-        selected, diagnostics, explanations = [], None, {}
+        return render_template("index.html", active="index", demos=UI_DEMOS)
+
+    # ------------------------------------------------------------ diagnostic
+    @app.route("/diagnostic", methods=["GET", "POST"])
+    def diagnostic():
         if request.method == "POST":
-            selected = request.form.getlist("symptoms")
-            user_cf = float(request.form.get("user_cf", 1.0))
-            diagnostics = engine.forward_chaining({s: user_cf for s in selected})
-            for rule, _ in diagnostics:
-                explanations[rule.conclusion] = engine.explain_conclusion(rule.conclusion)
-        return render_template_string(HTML, questions=QUESTIONS_SYMPTOMES, rules=admin.list_rules(),
-                                      selected=selected, diagnostics=diagnostics,
-                                      explanations=explanations, consistency=admin.check_consistency())
+            action = request.form.get("action", "answer")
+
+            if action == "start":
+                category = request.form.get("category", "")
+                if category not in {c["key"] for c in UI_CATEGORIES}:
+                    category = "Réseau"
+                write_state(category, {}, [])
+                return redirect(url_for("diagnostic"))
+
+            if action == "reset":
+                clear_state()
+                return redirect(url_for("diagnostic"))
+
+            if action == "back":
+                known = answers()
+                history = list(session.get("history") or [])
+                if history:
+                    last = history.pop()
+                    known.pop(last, None)
+                    write_state(current_category(), known, history, session.get("demo"))
+                return redirect(url_for("diagnostic"))
+
+            if action == "answer":
+                fact = request.form.get("fact", "")
+                raw_cf = request.form.get("cf", "")
+                try:
+                    cf = float(raw_cf)
+                except (TypeError, ValueError):
+                    return redirect(url_for("diagnostic"))
+                valid_cf = {round(a["cf"], 4) for a in UI_ANSWERS}
+                if fact not in QUESTIONS_SYMPTOMES or round(cf, 4) not in valid_cf:
+                    return redirect(url_for("diagnostic"))
+                known = answers()
+                history = [f for f in (session.get("history") or []) if f != fact]
+                known[fact] = cf
+                history.append(fact)
+                write_state(current_category(), known, history, session.get("demo"))
+                return redirect(url_for("diagnostic"))
+
+            return redirect(url_for("diagnostic"))
+
+        requested = request.args.get("categorie")
+        if requested:
+            if requested in {c["key"] for c in UI_CATEGORIES}:
+                write_state(requested, {}, [])
+                return redirect(url_for("diagnostic"))
+            abort(404)
+
+        category = current_category()
+        if category is None:
+            return render_template("diagnostic.html", active="diagnostic",
+                                   needs_category=True, category=None,
+                                   answers={}, history=[], question=None,
+                                   active_rule=None, active_inter=None,
+                                   progress={"answered": 0, "total": 1, "percent": 0, "number": 1},
+                                   band=None, demo=None)
+
+        known = answers()
+        engine, found = run(known)
+        scoped = [item for item in found if item[0].category == category]
+        next_fact, active_rule, active_inter = ui_next_step(rules, known, category, engine.threshold)
+
+        if scoped or next_fact is None:
+            return redirect(url_for("resultat"))
+
+        progress = ui_progress(known, active_rule, active_inter, inter_map)
+        history = [f for f in (session.get("history") or []) if f in known]
+        history += [f for f in known if f not in history]
+        return render_template(
+            "diagnostic.html", active="diagnostic", needs_category=False,
+            category=ui_category(category), answers=known, history=history,
+            question={"fact": next_fact, "label": ui_fact_label(next_fact)},
+            active_rule=active_rule, active_inter=active_inter,
+            rule_premises=ui_rule_premises(active_rule, inter_map),
+            progress=progress, choices=UI_ANSWERS,
+            band=None, demo=ui_demo(session.get("demo")) if session.get("demo") else None,
+        )
+
+    # --------------------------------------------------------------- résultat
+    @app.get("/resultat")
+    def resultat():
+        payload = result_payload()
+        return render_template("resultat.html", active="diagnostic",
+                               empty=not payload["answers"] and not payload["category"],
+                               **payload)
+
+    @app.get("/resultat/impression")
+    def resultat_impression():
+        payload = result_payload()
+        return render_template("resultat_impression.html",
+                               printed_at=datetime.now().strftime("%d/%m/%Y à %H:%M"),
+                               empty=not payload["answers"] and not payload["category"],
+                               **payload)
+
+    # ----------------------------------------------------------------- règles
+    @app.get("/regles")
+    def regles():
+        query = (request.args.get("q") or "").strip()
+        category = request.args.get("categorie") or ""
+        rule_type = request.args.get("type") or ""
+        needle = ui_normalize(query)
+
+        enriched = [ui_rule_detail(r, inter_map) for r in rules]
+        filtered = []
+        for item in enriched:
+            if category and item["category"] != category:
+                continue
+            if rule_type == "diagnostic" and item["type_key"] != "diagnostic":
+                continue
+            if rule_type == "intermediaire" and item["type_key"] != "intermediaire":
+                continue
+            if needle:
+                haystack = ui_normalize(" ".join([
+                    item["id"], item["description"], item["conclusion"], item["category"],
+                    " ".join(p["label"] for p in item["premises"]),
+                    " ".join(p["fact"] for p in item["premises"]),
+                ]))
+                if needle not in haystack:
+                    continue
+            filtered.append(item)
+
+        report = admin.check_consistency()
+        anomalies = report["doublons_premisses"] + report["faits_intermediaires_inutilises"]
+        return render_template(
+            "regles.html", active="regles", rules=filtered, total=len(rules),
+            query=query, category=category, rule_type=rule_type,
+            anomalies=anomalies, report=report,
+            counts={"diagnostic": len([r for r in rules if r.is_diagnostic]),
+                    "intermediaire": len([r for r in rules if not r.is_diagnostic])},
+        )
+
+    @app.get("/regles/export")
+    def regles_export():
+        payload = json.dumps([asdict(r) for r in rules], indent=2, ensure_ascii=False)
+        return Response(payload, mimetype="application/json",
+                        headers={"Content-Disposition": 'attachment; filename="regles_helpdesk.json"'})
+
+    # -------------------------------------------------------------- évaluation
+    @app.get("/evaluation")
+    def evaluation():
+        rows, correct = evaluate_30_cases(HelpdeskInferenceEngine(rules, ontology))
+        by_category = []
+        for cat in categories:
+            scoped = [r for r in rows if r["expected"].startswith("diag_") and
+                      next((x.category for x in rules if x.conclusion == r["expected"]), None) == cat["key"]]
+            if scoped:
+                by_category.append({"label": cat["label"],
+                                    "ok": len([r for r in scoped if r["ok"]]),
+                                    "total": len(scoped)})
+        return render_template(
+            "evaluation.html", active="evaluation", rows=rows, correct=correct,
+            total_cases=len(rows), accuracy=round(100 * correct / max(1, len(rows)), 1),
+            by_category=by_category,
+        )
+
+    @app.post("/evaluation/benchmark")
+    def evaluation_benchmark():
+        cached = "data" in benchmark_cache
+        if not cached:
+            try:
+                benchmark_cache["data"] = run_noise_benchmark(rules)
+            except ImportError:
+                return jsonify({"error": "Le benchmark nécessite scikit-learn et numpy."}), 503
+            except Exception:
+                return jsonify({"error": "Le calcul du benchmark a échoué. Réessayez."}), 500
+        data = benchmark_cache["data"]
+        return jsonify({
+            "results": [{"model": name, "mean": round(v[0], 1),
+                         "min": round(v[1], 1), "max": round(v[2], 1)}
+                        for name, v in data.items()],
+            "cached": cached,
+            "conditions": {"omit": 10, "noise": 15, "draws": 10},
+        })
+
+    # ------------------------------------------------------------- à propos
+    @app.get("/a-propos")
+    def a_propos():
+        return render_template("a_propos.html", active="a_propos",
+                               frame_count=len(ontology), rule_count=len(rules),
+                               symptom_count=len(QUESTIONS_SYMPTOMES))
+
+    # --------------------------------------------------------- démo 1 clic
+    @app.post("/demo/<slug>")
+    def launch_demo(slug):
+        item = ui_demo(slug)
+        if item is None:
+            abort(404)
+        write_state(item["category"], dict(item["facts"]), list(item["facts"].keys()), demo=slug)
+        return redirect(url_for("resultat"))
+
+    # ---------------------------------------------------------------- erreurs
+    @app.errorhandler(404)
+    def not_found(error):
+        return render_template("404.html", active=""), 404
+
+    @app.errorhandler(500)
+    def server_error(error):
+        return render_template("500.html", active=""), 500
 
     return app
 
