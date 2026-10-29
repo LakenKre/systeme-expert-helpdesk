@@ -25,6 +25,27 @@ from dataclasses import dataclass, field, asdict
 from typing import List, Dict, Optional, Tuple, Callable
 
 
+# ------------------------------------------------------------------------------
+# Encodage de la console : sous Windows, sys.stdout utilise cp1252 par défaut et
+# lève UnicodeEncodeError sur les caractères semi-graphiques de l'arbre
+# d'explication (─, └). On force UTF-8 pour la sortie standard et le terminal.
+# ------------------------------------------------------------------------------
+if sys.platform == "win32":
+    try:
+        import ctypes
+        ctypes.windll.kernel32.SetConsoleOutputCP(65001)
+        ctypes.windll.kernel32.SetConsoleCP(65001)
+    except Exception:
+        pass
+
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        try:
+            _stream.reconfigure(encoding="utf-8", errors="replace")
+        except (ValueError, OSError):
+            pass
+
+
 # ==============================================================================
 # 1. ONTOLOGIE ET CADRES (FRAMES)
 # ==============================================================================

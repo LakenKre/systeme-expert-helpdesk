@@ -47,7 +47,7 @@ with tab1:
     with col_reset:
         st.write("")
         st.write("")
-        if st.button("🔄 Réinitialiser", use_container_width=True):
+        if st.button("🔄 Réinitialiser", width="stretch"):
             st.session_state.qa_answers = {}
             st.rerun()
 
@@ -100,16 +100,16 @@ with tab1:
         st.markdown(f"### ❓ {QUESTIONS_SYMPTOMES.get(next_fact, next_fact)}")
         st.caption(f"Fait recherché : `{next_fact}`")
         b1, b2, b3, b4 = st.columns(4)
-        if b1.button("✅ Oui, certain (CF = 1.0)", use_container_width=True, type="primary"):
+        if b1.button("✅ Oui, certain (CF = 1.0)", width="stretch", type="primary"):
             answers[next_fact] = 1.0
             st.rerun()
-        if b2.button("👍 Probablement (CF = 0.8)", use_container_width=True):
+        if b2.button("👍 Probablement (CF = 0.8)", width="stretch"):
             answers[next_fact] = 0.8
             st.rerun()
-        if b3.button("🤔 Peut-être (CF = 0.5)", use_container_width=True):
+        if b3.button("🤔 Peut-être (CF = 0.5)", width="stretch"):
             answers[next_fact] = 0.5
             st.rerun()
-        if b4.button("❌ Non (CF = 0.0)", use_container_width=True):
+        if b4.button("❌ Non (CF = 0.0)", width="stretch"):
             answers[next_fact] = 0.0
             st.rerun()
         with st.expander("💡 Pourquoi cette question ?"):
@@ -171,7 +171,7 @@ with tab3:
         "Type": "Diagnostic final" if r.is_diagnostic else "Intermédiaire",
         "Prémisses (SI)": " ET ".join(r.premises), "Conclusion (ALORS)": r.conclusion,
         "CF règle": r.cf, "Description": r.description} for r in st.session_state.rules]),
-        use_container_width=True, height=320)
+        width="stretch", height=320)
 
     col_add, col_del = st.columns(2)
     with col_add:
@@ -219,7 +219,7 @@ with tab4:
     st.dataframe(pd.DataFrame([{
         "Cas": r["id"], "Scénario": r["desc"], "Attendu": r["expected"],
         "Prédit": r["pred"], "CF MYCIN": r["cf"], "Résultat": "✅" if r["ok"] else "❌"} for r in rows]),
-        use_container_width=True, height=350)
+        width="stretch", height=350)
 
     st.markdown("---")
     st.markdown("#### 🤖 Benchmark sur tickets bruités (système expert mesuré vs Scikit-learn)")
